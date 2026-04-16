@@ -1,7 +1,6 @@
 import argparse
 from multiprocessing import freeze_support
 from pathlib import Path
-
 from npy_to_nii_calibrated import npy_to_nii
 from totalsegmentator.python_api import totalsegmentator
 
