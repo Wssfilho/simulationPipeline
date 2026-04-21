@@ -1,7 +1,7 @@
 from snakemake.exceptions import WorkflowError
 
 configfile: "config.yaml"
-
+#caso precise podemos usar mais de 3 vezes os benchmarks basta usar o repeat
 samples_from_npy = glob_wildcards("{sample}.npy").sample
 samples_from_nii = glob_wildcards("imagens_ct/{sample}.nii.gz").sample
 samples = sorted(set(samples_from_npy + samples_from_nii))
