@@ -1,0 +1,51 @@
+from snakemake.exceptions import WorkflowError
+
+configfile: "config.yaml"
+
+samples_from_npy = glob_wildcards("{sample}.npy").sample
+samples_from_nii = glob_wildcards("imagens_ct/{sample}.nii.gz").sample
+samples = sorted(set(samples_from_npy + samples_from_nii))
+spacing = config.get("spacing", [])
+
+if len(spacing) != 3:
+    raise WorkflowError(
+        "config.yaml deve conter spacing com 3 valores: [SX, SY, SZ]."
+    )
+
+if not samples:
+    raise WorkflowError(
+        "Nenhuma entrada encontrada. Coloque arquivos .npy na pasta atual "
+        "ou arquivos .nii.gz em imagens_ct/."
+    )
+
+rule all:
+    input:
+        expand("resultados/{sample}.nii", sample=samples)
+
+rule convert_npy_to_nii:
+    input:
+        "{sample}.npy"
+    output:
+        "imagens_ct/{sample}.nii.gz"
+    params:
+        spacing=lambda wc: " ".join(map(str, spacing))
+    message:
+        "Convertendo {input} para {output}"
+    shell:
+        """
+        python npy_to_nii_calibrated.py {input} --output {output} --spacing {params.spacing}
+        """
+
+rule segment_with_totalsegmentator:
+    input:
+        "imagens_ct/{sample}.nii.gz"
+    output:
+        "resultados/{sample}.nii"
+    threads:
+        1
+    message:
+        "Segmentando {input} em {output}"
+    shell:
+        """
+        python segmentation.py {input}
+        """
