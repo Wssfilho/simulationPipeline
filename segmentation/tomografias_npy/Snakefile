@@ -31,10 +31,13 @@ rule convert_npy_to_nii:
         spacing=lambda wc: " ".join(map(str, spacing))
     message:
         "Convertendo {input} para {output}"
+    benchmark:
+        "benchmarks/convert_npy_to_nii/{sample}.tsv"
     shell:
         """
         python npy_to_nii_calibrated.py {input} --output {output} --spacing {params.spacing}
         """
+    
 
 rule segment_with_totalsegmentator:
     input:
@@ -45,7 +48,10 @@ rule segment_with_totalsegmentator:
         1
     message:
         "Segmentando {input} em {output}"
+    benchmark:
+        "benchmarks/segment_with_totalsegmentator/{sample}.tsv"
     shell:
         """
         python segmentation.py "{input}" --output "{output}"
         """
+  
