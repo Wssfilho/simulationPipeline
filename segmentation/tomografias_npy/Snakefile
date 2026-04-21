@@ -47,5 +47,5 @@ rule segment_with_totalsegmentator:
         "Segmentando {input} em {output}"
     shell:
         """
-        python segmentation.py {input}
+        python segmentation.py "{input}" --output "{output}"
         """
