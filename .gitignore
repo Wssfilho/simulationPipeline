@@ -13,6 +13,8 @@ __pycache__/
 .idea/   
 ./data_MASH_tumor/
 gate-first-simulator/
+!gate-first-simulator/smulacao_claude.py
+
 segmentation/tomografias_npy/imagens_ct/
 segmentation/tomografias_npy/resultados/
 segmentation/tomografias_npy/0801_clean_fdk_256.npy
