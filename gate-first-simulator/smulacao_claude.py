@@ -40,7 +40,7 @@ if __name__ == "__main__":
     sim.random_seed = "auto"
     sim.g4_verbose_level = 0
     sim.store_json_archive = False
-    sim.number_of_threads = 4      # aumenta se tiver mais cores
+    sim.number_of_threads = 1     # aumenta se tiver mais cores
     sim.output_dir = "output"
     sim.progress_bar = True
     sim.check_volumes_overlap = False
