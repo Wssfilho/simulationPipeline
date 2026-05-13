@@ -5,11 +5,33 @@ Este pipeline automatiza:
 1. Conversao de arquivos `.npy` para `.nii.gz`
 2. Segmentacao com TotalSegmentator
 
+# caso de erro na instalacao
+
+Traceback (most recent call last):
+
+File "/home/wilson/tcc/venv/bin/snakemake", line 6, in <module>
+
+sys.exit(main())
+
+File "/home/wilson/tcc/venv/lib/python3.10/site-packages/snakemake/**init**.py", line 2736, in main
+
+parser = get_argument_parser()
+
+File "/home/wilson/tcc/venv/lib/python3.10/site-packages/snakemake/**init**.py", line 1607, in get_argument_parser
+
+lp_solvers = pulp.list_solvers(onlyAvailable=True)
+
+AttributeError: module 'pulp' has no attribute 'list_solvers'. Did you mean: 'listSolvers'?
+
+pip install "pulp<2.8.0"
+
+pip install --upgrade snakemake
+
 ## Estrutura esperada
 
 - Entradas `.npy`: pasta atual (`segmentation/tomografias_npy/`)
 - Entradas `.nii.gz` ja prontas: `imagens_ct/`
-- Saidas da segmentacao: `resultados/<sample>/`
+- Saidas da segmentacao: `resultados/<sample>.nii`
 
 ## Arquivos do workflow
 
@@ -45,4 +67,4 @@ snakemake --cores 1 -p
 
 - Se existir `imagens_ct/<sample>.nii.gz`, o Snakemake usa esse arquivo diretamente.
 - Se nao existir, mas houver `<sample>.npy`, o arquivo sera convertido antes da segmentacao.
-- O script `segmentation_automatized.py` e usado na etapa de segmentacao.
+- A etapa de segmentacao usa `segmentation.py` com contrato 1:1 (uma entrada para uma saida).
