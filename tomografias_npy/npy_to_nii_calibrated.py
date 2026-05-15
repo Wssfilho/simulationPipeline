@@ -39,8 +39,7 @@ def npy_to_nii(
     spacing: tuple = (1.0, 1.0, 1.0),
     do_calibration=True,
     raw_air=0.0,
-    # hu_air=-1000.0,  # Valor típico para ar em CT
-    hu_air=-3000.0,
+    hu_air=-1000.0,  # Valor típico para ar em CT
     raw_soft=1.05,
     hu_soft=40.0
 ):

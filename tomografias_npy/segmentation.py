@@ -26,6 +26,7 @@ def run_totalsegmentator(input_path: Path, output_path: Path) -> None:
         nr_thr_resamp=1,
         nr_thr_saving=1,
         device="gpu",
+        statistics=True,
     )
 
 
