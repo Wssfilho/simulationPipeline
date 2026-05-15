@@ -61,6 +61,8 @@ Com execucao real (exemplo com 1 core):
 
 ```bash
 snakemake --cores 1 -p
+#execucao com 6 cores
+snakemake --cores 6 -p
 ```
 
 ## Observacoes
