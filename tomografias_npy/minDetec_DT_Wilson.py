@@ -102,7 +102,7 @@ if __name__ == "__main__":
     # assert patient.voxel_materials == vm
     patient.voxel_materials = vm
     # Rotação inicial para vista de frente (AP)
-    patient.rotation = Rotation.from_euler("y", 90, degrees=True).as_matrix()
+    patient.rotation = Rotation.from_euler("z", 90, degrees=True).as_matrix()
     # write the image of labels (None by default)
     patient.dump_label_image = f"{args.output_dir}/FDK_label.mhd"
 
