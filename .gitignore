@@ -17,4 +17,14 @@ gate-first-simulator/
 
 segmentation/tomografias_npy/imagens_ct/
 segmentation/tomografias_npy/resultados/
-segmentation/tomografias_npy/0801_clean_fdk_256.npy
+segmentation/0801_clean_fdk_256.npy
+segmentation/0802_clean_fdk_256.npy
+*.snakemake/
+snakemake/metadata/
+tomografias_npy/output
+tomografias_npy/resultados
+tomografias_npy/data
+
+
+
+

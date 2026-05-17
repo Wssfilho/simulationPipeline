@@ -14,8 +14,21 @@ def sample_name_from_path(path: Path) -> str:
     raise ValueError("Arquivo de entrada deve terminar em .nii ou .nii.gz")
 
 
-def run_totalsegmentator(input_path: Path, output_path: Path) -> None:
+def resolve_device(device: str) -> str:
+    if device != "auto":
+        return device
+
+    try:
+        import torch
+    except Exception:
+        return "cpu"
+
+    return "gpu" if torch.cuda.is_available() else "cpu"
+
+
+def run_totalsegmentator(input_path: Path, output_path: Path, device: str) -> None:
     print(f"Processando {input_path.name} -> {output_path.name}...")
+    resolved_device = resolve_device(device)
     totalsegmentator(
         input=str(input_path),
         output=str(output_path),
@@ -25,7 +38,7 @@ def run_totalsegmentator(input_path: Path, output_path: Path) -> None:
         fast=True,
         nr_thr_resamp=1,
         nr_thr_saving=1,
-        device="gpu",
+        device=resolved_device,
         statistics=True,
     )
 
@@ -47,6 +60,12 @@ def parse_args() -> argparse.Namespace:
         "-o",
         default=None,
         help="Arquivo de saida .nii para um processamento unico.",
+    )
+    parser.add_argument(
+        "--device",
+        choices=["auto", "cpu", "gpu"],
+        default="auto",
+        help="Dispositivo de execucao (padrao: auto).",
     )
     return parser.parse_args()
 
@@ -81,7 +100,7 @@ def main():
             output_path = output_base_dir / f"{sample_name}.nii"
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        run_totalsegmentator(input_path, output_path)
+        run_totalsegmentator(input_path, output_path, args.device)
         print("Tarefa concluida!")
         return
 
@@ -98,7 +117,7 @@ def main():
     for input_path in files:
         sample_name = sample_name_from_path(input_path)
         output_path = output_base_dir / f"{sample_name}.nii"
-        run_totalsegmentator(input_path, output_path)
+        run_totalsegmentator(input_path, output_path, args.device)
 
     print("Tarefa concluida!")
 

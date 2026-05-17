@@ -1,5 +1,6 @@
 # Parametros usados na conversao de .npy para .nii.gz
 spacing:
-  - 1.0
-  - 1.0
-  - 1.0
+  - 1.5
+  - 1.5
+  - 1.5
+center_mhd: true

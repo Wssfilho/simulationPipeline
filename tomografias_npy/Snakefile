@@ -5,7 +5,11 @@ configfile: "config.yaml"
 samples_from_npy = glob_wildcards("{sample}.npy").sample
 samples_from_nii = glob_wildcards("imagens_ct/{sample}.nii.gz").sample
 samples = sorted(set(samples_from_npy + samples_from_nii))
+samples_for_mhd = sorted(set(samples_from_npy))
 spacing = config.get("spacing", [])
+gate_inicio = config.get("gate_inicio", 0)
+center_mhd = config.get("center_mhd", False)
+origin_mhd = config.get("origin_mhd", None)
 
 if len(spacing) != 3:
     raise WorkflowError(
@@ -18,9 +22,21 @@ if not samples:
         "ou arquivos .nii.gz em imagens_ct/."
     )
 
+if origin_mhd is not None:
+    if len(origin_mhd) != 3:
+        raise WorkflowError(
+            "config.yaml deve conter origin_mhd com 3 valores: [OX, OY, OZ]."
+        )
+    if center_mhd:
+        raise WorkflowError(
+            "Use apenas um: origin_mhd ou center_mhd=true."
+        )
+
 rule all:
     input:
-        expand("resultados/{sample}.nii", sample=samples)
+        expand("resultados/{sample}.nii", sample=samples),
+        expand("../gate-first-simulator/output/Slide-{sample}.mhd", sample=samples_for_mhd),
+        expand("../gate-first-simulator/output/stat-{sample}.txt", sample=samples_for_mhd)
 
 rule convert_npy_to_nii:
     input:
@@ -35,7 +51,25 @@ rule convert_npy_to_nii:
         "benchmarks/convert_npy_to_nii/{sample}.tsv"
     shell:
         """
-        python npy_to_nii_calibrated.py {input} --output {output} --spacing {params.spacing}
+        python npy2nii.py {input} --output {output} --spacing {params.spacing}
+        """
+
+rule convert_npy_to_mhd:
+    input:
+        "{sample}.npy"
+    output:
+        "../tomografias_npy/data/{sample}.mhd"
+    params:
+        spacing=lambda wc: " ".join(map(str, spacing)),
+        origin_flag=lambda wc: f"--origin {' '.join(map(str, origin_mhd))}" if origin_mhd else "",
+        center_flag="--center" if center_mhd else ""
+    message:
+        "Convertendo {input} para {output}"
+    benchmark:
+        "benchmarks/convert_npy_to_mhd/{sample}.tsv"
+    shell:
+        """
+        python npy2mhd.py {input} --output {output} --spacing {params.spacing} {params.center_flag} {params.origin_flag}
         """
     
 
@@ -53,5 +87,28 @@ rule segment_with_totalsegmentator:
     shell:
         """
         python segmentation.py "{input}" --output "{output}"
+        """
+
+rule simulate_gate:
+    input:
+        mhd=rules.convert_npy_to_mhd.output,
+        seg="resultados/{sample}.nii"
+    output:
+        slide="../gate-first-simulator/output/Slide-{sample}.mhd",
+        stats="../gate-first-simulator/output/stat-{sample}.txt"
+    params:
+        inicio=gate_inicio,
+        image_rel=lambda wc, input: input.mhd,
+        output_dir="output",
+        tag=lambda wc: wc.sample
+    message:
+        "Simulando {input.mhd}"
+    benchmark:
+        "benchmarks/gate/{sample}.tsv"
+
+    shell:
+        """
+        cd ../gate-first-simulator
+        python ../tomografias_npy/minDetec_DT_Wilson.py {params.inicio} --image "{params.image_rel}" --output-dir "{params.output_dir}" --tag "{params.tag}"
         """
   
