@@ -94,8 +94,8 @@ rule simulate_gate:
         mhd=rules.convert_npy_to_mhd.output,
         seg="resultados/{sample}.nii"
     output:
-        slide="../gate-first-simulator/output/Slide-{sample}.mhd",
-        stats="../gate-first-simulator/output/stat-{sample}.txt"
+        slide="../output/Slide-{sample}.mhd",
+        stats="../output/stat-{sample}.txt"
     params:
         inicio=gate_inicio,
         image_rel=lambda wc, input: input.mhd,
