@@ -178,7 +178,7 @@ if __name__ == "__main__":
     sim.physics_manager.set_production_cut("world", "all", 10 * mm)
     # cut
 
-    # actor
+    # for fluency actor
     detector_actor = sim.add_actor("FluenceActor", "detector_actor")
     detector_actor.attached_to = detector_plane
     detector_actor.output_filename = f"Slide-{tag}.mhd"
@@ -186,6 +186,16 @@ if __name__ == "__main__":
     detector_actor.size = [1, 350, 350]
     detector_actor.output_coordinate_system = "local"
     detector_actor.keep_data_per_run = True
+
+    # for dosimetry
+    # dose_actor = sim.add_actor("DoseActor", "dose_actor")
+    # dose_actor.attached_to = "patient"
+    # dose_actor.edep_uncertainty.active = True
+    # dose_actor.size = [99, 99, 99]
+    # dose_actor.spacing = [2 * mm, 2 * mm, 2 * mm]
+    # dose_actor.output_coordinate_system = "attached_to_image"
+    # dose_actor.translation = [2 * mm, 3 * mm, -2 * mm]
+    # dose_actor.hit_type = "random"
 
     stats = sim.add_actor("SimulationStatisticsActor", "stats")
     stats.track_types_flag = True
