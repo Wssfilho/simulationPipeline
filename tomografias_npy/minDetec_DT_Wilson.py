@@ -191,10 +191,10 @@ if __name__ == "__main__":
     # dose_actor = sim.add_actor("DoseActor", "dose_actor")
     # dose_actor.attached_to = "patient"
     # dose_actor.edep_uncertainty.active = True
-    # dose_actor.size = [99, 99, 99]
-    # dose_actor.spacing = [2 * mm, 2 * mm, 2 * mm]
+    # dose_actor.size = [256, 256, 256]
+    # dose_actor.spacing = [1.5 * mm, 1.5 * mm, 1.5 * mm]
     # dose_actor.output_coordinate_system = "attached_to_image"
-    # dose_actor.translation = [2 * mm, 3 * mm, -2 * mm]
+    # dose_actor.translation = [0 * mm, 0 * mm, -0 * mm]
     # dose_actor.hit_type = "random"
 
     stats = sim.add_actor("SimulationStatisticsActor", "stats")
