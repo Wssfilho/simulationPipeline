@@ -35,8 +35,8 @@ if origin_mhd is not None:
 rule all:
     input:
         expand("resultados/{sample}.nii", sample=samples),
-        expand("../gate-first-simulator/output/Slide-{sample}.mhd", sample=samples_for_mhd),
-        expand("../gate-first-simulator/output/stat-{sample}.txt", sample=samples_for_mhd)
+        expand("output/Slide-{sample}.mhd", sample=samples_for_mhd),
+        expand("output/stat-{sample}.txt", sample=samples_for_mhd)
 
 rule convert_npy_to_nii:
     input:
@@ -94,12 +94,12 @@ rule simulate_gate:
         mhd=rules.convert_npy_to_mhd.output,
         seg="resultados/{sample}.nii"
     output:
-        slide="../output/Slide-{sample}.mhd",
-        stats="../output/stat-{sample}.txt"
+        slide="output/Slide-{sample}.mhd",
+        stats="output/stat-{sample}.txt"
     params:
         inicio=gate_inicio,
         image_rel=lambda wc, input: input.mhd,
-        output_dir="output",
+        output_dir="../tomografias_npy/output",
         tag=lambda wc: wc.sample
     message:
         "Simulando {input.mhd}"
