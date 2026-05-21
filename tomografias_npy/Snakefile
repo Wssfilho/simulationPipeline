@@ -44,14 +44,16 @@ rule convert_npy_to_nii:
     output:
         "imagens_ct/{sample}.nii.gz"
     params:
-        spacing=lambda wc: " ".join(map(str, spacing))
+        spacing=lambda wc: " ".join(map(str, spacing)),
+        origin_flag=lambda wc: f"--origin {' '.join(map(str, origin_mhd))}" if origin_mhd else "",
+        center_flag="--center" if center_mhd else ""
     message:
         "Convertendo {input} para {output}"
     benchmark:
         "benchmarks/convert_npy_to_nii/{sample}.tsv"
     shell:
         """
-        python npy2nii.py {input} --output {output} --spacing {params.spacing}
+        python npy2nii.py {input} --output {output} --spacing {params.spacing} {params.center_flag} {params.origin_flag}
         """
 
 rule convert_npy_to_mhd:

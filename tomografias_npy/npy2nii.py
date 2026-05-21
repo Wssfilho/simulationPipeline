@@ -144,7 +144,7 @@ def convert_npy_to_nii(
     flip_y=True,
     hu_slope=1000.0,
     hu_intercept=-1000.0,
-    mask_cylinder=False,
+    mask_cylinder=True,
     air_hu=-1000.0,
     cylinder_radius_mm=None,
     min_hu=None,
@@ -233,7 +233,8 @@ def convert_npy_to_nii(
     if max_hu is not None:
         n = int(np.sum(arr_hu > max_hu))
         arr_hu[arr_hu > max_hu] = max_hu
-        print(f"Correção superior: {n} voxels > {max_hu} truncados em {max_hu}")
+        print(
+            f"Correção superior: {n} voxels > {max_hu} truncados em {max_hu}")
 
     # ── 6. Conversão de tipo ──────────────────────────────────────────────────
     if dtype == "int16":
@@ -265,12 +266,10 @@ def convert_npy_to_nii(
     sx, sy, sz = spacing
 
     if center:
-        # Origem calculada para centralizar o volume no espaço de coordenadas
-        nx, ny_dim, nz_dim = arr_ras.shape
-        ox = -(nx * sx) / 2.0
-        oy = -(ny_dim * sy) / 2.0
-        oz = -(nz_dim * sz) / 2.0
-        used_origin = (ox, oy, oz)
+        # Mantem a mesma regra do SimpleITK: origem = -(size * spacing) / 2
+        size_xyz = np.array(arr_ras.shape, dtype=np.float64)
+        spacing_xyz = np.array([sx, sy, sz], dtype=np.float64)
+        used_origin = tuple(-(size_xyz * spacing_xyz) / 2.0)
         print(f"\nOrigem centralizada calculada: {used_origin}")
     else:
         used_origin = origin
@@ -281,9 +280,9 @@ def convert_npy_to_nii(
     # A convenção NIfTI usa (x, y, z) com espaçamento na diagonal principal.
     affine = np.array([
         [sx,  0,  0, ox],
-        [ 0, sy,  0, oy],
-        [ 0,  0, sz, oz],
-        [ 0,  0,  0,  1],
+        [0, sy,  0, oy],
+        [0,  0, sz, oz],
+        [0,  0,  0,  1],
     ], dtype=np.float64)
 
     img = nib.Nifti1Image(arr_ras, affine)
@@ -387,10 +386,20 @@ if __name__ == "__main__":
         help="Intercepto da calibração HU (padrão: -1000.0)",
     )
 
-    parser.add_argument(
+    parser.set_defaults(mask_cylinder=True)
+
+    mask_group = parser.add_mutually_exclusive_group()
+    mask_group.add_argument(
         "--mask-cylinder",
+        dest="mask_cylinder",
         action="store_true",
-        help="Aplica máscara cilíndrica no plano x-y, preenchendo exterior com --air-hu",
+        help="Aplica máscara cilíndrica no plano x-y (padrão)",
+    )
+    mask_group.add_argument(
+        "--no-mask-cylinder",
+        dest="mask_cylinder",
+        action="store_false",
+        help="Desativa a máscara cilíndrica no plano x-y",
     )
 
     parser.add_argument(
