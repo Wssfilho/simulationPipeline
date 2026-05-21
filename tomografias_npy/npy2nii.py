@@ -149,6 +149,7 @@ def convert_npy_to_nii(
     cylinder_radius_mm=None,
     min_hu=None,
     max_hu=None,
+    lps=False,
 ):
     """
     Converte um volume .npy para o formato NIfTI (.nii.gz).
@@ -254,42 +255,51 @@ def convert_npy_to_nii(
         print("[ERRO] dtype deve ser int16, float32 ou uint8")
         sys.exit(1)
 
-    # ── 7. Reorientação espacial → RAS ────────────────────────────────────────
-    # NIfTI espera o array em ordem (x, y, z); a reorientação também aplica
-    # o espelhamento Y para alinhar com o sistema anatômico RAS.
-    arr_ras = reorient_to_ras(arr_out, flip_y=flip_y)
+    # ── 7. Reorientação espacial ─────────────────────────────────────────────
+    # NIfTI espera o array em ordem (x, y, z). Em modo LPS, nao aplicamos
+    # flip no eixo Y para manter a orientacao compatível com ITK/vv.
+    effective_flip_y = False if lps else flip_y
+    arr_xyz = reorient_to_ras(arr_out, flip_y=effective_flip_y)
 
-    print("\nDepois da reorientação (RAS):")
-    print(f"  Shape (x,y,z) : {arr_ras.shape}")
+    orient_label = "LPS" if lps else "RAS"
+    print(f"\nDepois da reorientação ({orient_label}):")
+    print(f"  Shape (x,y,z) : {arr_xyz.shape}")
 
     # ── 8. Matriz affine e exportação NIfTI ───────────────────────────────────
     sx, sy, sz = spacing
 
     if center:
         # Mantem a mesma regra do SimpleITK: origem = -(size * spacing) / 2
-        size_xyz = np.array(arr_ras.shape, dtype=np.float64)
+        size_xyz = np.array(arr_xyz.shape, dtype=np.float64)
         spacing_xyz = np.array([sx, sy, sz], dtype=np.float64)
         used_origin = tuple(-(size_xyz * spacing_xyz) / 2.0)
         print(f"\nOrigem centralizada calculada: {used_origin}")
     else:
         used_origin = origin
 
-    ox, oy, oz = used_origin
+    if lps:
+        # Converte LPS (ITK) -> RAS (NIfTI) invertendo X e Y
+        ox, oy, oz = used_origin
+        sx_ras, sy_ras, sz_ras = -sx, -sy, sz
+        ox_ras, oy_ras, oz_ras = -ox, -oy, oz
+    else:
+        ox_ras, oy_ras, oz_ras = used_origin
+        sx_ras, sy_ras, sz_ras = sx, sy, sz
 
     # Matriz affine 4×4: codifica espaçamento, origem e orientação RAS
     # A convenção NIfTI usa (x, y, z) com espaçamento na diagonal principal.
     affine = np.array([
-        [sx,  0,  0, ox],
-        [0, sy,  0, oy],
-        [0,  0, sz, oz],
+        [sx_ras,     0,     0, ox_ras],
+        [0,      sy_ras,     0, oy_ras],
+        [0,          0, sz_ras, oz_ras],
         [0,  0,  0,  1],
     ], dtype=np.float64)
 
-    img = nib.Nifti1Image(arr_ras, affine)
+    img = nib.Nifti1Image(arr_xyz, affine)
 
     # Metadados de cabeçalho NIfTI
     hdr = img.header
-    hdr.set_zooms((sx, sy, sz))          # espaçamento em mm
+    hdr.set_zooms((abs(sx), abs(sy), abs(sz)))  # espaçamento em mm
     hdr.set_xyzt_units("mm")             # unidade espacial
     hdr["qform_code"] = 1                # scanner coordinates
     hdr["sform_code"] = 1
@@ -302,12 +312,13 @@ def convert_npy_to_nii(
     print("\nSalvo em:")
     print(f"  {output_path}")
     print("\nImagem final:")
-    print(f"  Shape   (x,y,z) : {arr_ras.shape}")
+    print(f"  Shape   (x,y,z) : {arr_xyz.shape}")
     print(f"  Spacing (x,y,z) : ({sx}, {sy}, {sz}) mm")
     print(f"  Origin  (x,y,z) : {used_origin}")
     print(f"  Dtype           : {arr_out.dtype}")
     print(f"  Range           : {arr_out.min()} → {arr_out.max()}")
-    print(f"  Flip Y aplicado : {flip_y}")
+    print(f"  Flip Y aplicado : {effective_flip_y}")
+    print(f"  Espaco          : {orient_label}")
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -386,6 +397,12 @@ if __name__ == "__main__":
         help="Intercepto da calibração HU (padrão: -1000.0)",
     )
 
+    parser.add_argument(
+        "--lps",
+        action="store_true",
+        help="Grava o NIfTI em LPS (compatível com ITK/vv)",
+    )
+
     parser.set_defaults(mask_cylinder=True)
 
     mask_group = parser.add_mutually_exclusive_group()
@@ -454,4 +471,5 @@ if __name__ == "__main__":
         cylinder_radius_mm=args.cylinder_radius_mm,
         min_hu=args.min_hu,
         max_hu=args.max_hu,
+        lps=args.lps,
     )
