@@ -281,15 +281,16 @@ def generate_cumulative_dvh(values, bins=100):
 def save_dvh_plot(dose_bins, cumulative_percent, organ_name, output_dir):
     """
     Salva o gráfico individual do DVH cumulativo em PNG.
-    """
 
+    Eixo X: dose real
+    Eixo Y: volume fracional acumulado
+    """
     plt.figure(figsize=(8, 6))
 
-    # Volume em fração, de 0 a 1
     fractional_volume = cumulative_percent / 100.0
 
     plt.plot(dose_bins, fractional_volume, label=organ_name)
-    plt.xlabel("Dose")
+    plt.xlabel("Dose absorvida")
     plt.ylabel("Volume fracional")
     plt.title(f"DVH cumulativo - {organ_name}")
     plt.grid(True)
@@ -321,24 +322,18 @@ def save_dvh_csv(dose_bins, cumulative_percent, organ_name, output_dir):
     return output_path
 
 
-def save_all_dvh_plot(dvh_data, output_dir, normalize_dose=False):
+def save_all_dvh_plot(dvh_data, output_dir):
     """
     Salva um único gráfico com todos os DVHs cumulativos.
 
-    Parâmetros:
-    - dvh_data: lista de dicionários com:
-        {
-            "orgao": nome do órgão,
-            "dose_bins": array de doses,
-            "volume": array de volume acumulado em %
-        }
+    Neste caso, a dose NÃO é normalizada.
 
-    - normalize_dose:
-        True  -> eixo X fica normalizado de 0 a 1, parecido com a imagem exemplo.
-        False -> eixo X usa a dose real.
+    Eixo X:
+    - Dose real do arquivo .mhd
+
+    Eixo Y:
+    - Volume fracional acumulado, de 0 a 1
     """
-
-    xlabel = "Dose"
     if len(dvh_data) == 0:
         print("Nenhum DVH disponível para gerar gráfico conjunto.")
         return None
@@ -356,24 +351,12 @@ def save_all_dvh_plot(dvh_data, output_dir, normalize_dose=False):
         if len(dose_bins) == 0:
             continue
 
-        if normalize_dose:
-            max_dose = np.max(dose_bins)
-
-            if max_dose > 0:
-                x = dose_bins / max_dose
-            else:
-                x = dose_bins
-
-            xlabel = "Dose fracional (normalizada por dose máxima)"
-        else:
-            x = dose_bins
-            xlabel = "Dose"
-
+        x = dose_bins
         y = cumulative_percent / 100.0
 
         plt.plot(x, y, linewidth=2, label=organ_name)
 
-    plt.xlabel(xlabel)
+    plt.xlabel("Dose absorvida")
     plt.ylabel("Volume fracional")
     plt.title("DVH cumulativo por órgão")
     plt.grid(True)
@@ -388,16 +371,15 @@ def save_all_dvh_plot(dvh_data, output_dir, normalize_dose=False):
     return output_path
 
 
-def save_all_dvh_csv(dvh_data, output_dir, normalize_dose=True):
+def save_all_dvh_csv(dvh_data, output_dir):
     """
     Salva todos os DVHs em um único CSV.
 
     Cada linha contém:
     - órgão
-    - dose
-    - dose_fracional
-    - volume_percentual_acumulado
-    - volume_fracional_acumulado
+    - dose real
+    - volume percentual acumulado
+    - volume fracional acumulado
     """
     rows = []
 
@@ -412,18 +394,10 @@ def save_all_dvh_csv(dvh_data, output_dir, normalize_dose=True):
         if len(dose_bins) == 0:
             continue
 
-        max_dose = np.max(dose_bins)
-
         for dose_value, volume_percent in zip(dose_bins, cumulative_percent):
-            if normalize_dose and max_dose > 0:
-                dose_fractional = dose_value / max_dose
-            else:
-                dose_fractional = dose_value
-
             rows.append({
                 "orgao": organ_name,
                 "dose": dose_value,
-                "dose_fracional": dose_fractional,
                 "volume_percentual_acumulado": volume_percent,
                 "volume_fracional_acumulado": volume_percent / 100.0
             })
@@ -568,21 +542,17 @@ def main():
     results_df.to_csv(output_stats_path, index=False)
 
     # ========================================================
-    # SALVAR DVH CONJUNTO
+    # SALVAR DVH CONJUNTO COM DOSE REAL NO EIXO X
     # ========================================================
 
     all_dvh_plot_path = save_all_dvh_plot(
         dvh_data=dvh_data,
-        output_dir=OUTPUT_DIR,
-        normalize_dose=True
-        # normalize_dose=True
+        output_dir=OUTPUT_DIR
     )
 
     all_dvh_csv_path = save_all_dvh_csv(
         dvh_data=dvh_data,
-        output_dir=OUTPUT_DIR,
-        normalize_dose=True
-        # normalize_dose=True
+        output_dir=OUTPUT_DIR
     )
 
     print("\n" + "=" * 60)
