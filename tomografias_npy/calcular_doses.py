@@ -39,12 +39,12 @@ os.makedirs(MASK_OUTPUT_DIR, exist_ok=True)
 # 79 = spinal_cord
 
 ORGAN_LABELS = {
-    "pulmao_esquerdo": [10, 11],
-    "pulmao_direito": [12, 13, 14],
-    "coracao": [51],
-    "esofago": [15],
-    "traqueia": [16],
-    "medula_espinhal": [79],
+    "Pulmao esquerdo": [10, 11],
+    "Pulmao direito": [12, 13, 14],
+    "Coracao": [51],
+    "Esofago": [15],
+    "Traqueia": [16],
+    "Medula espinhal": [79],
 }
 
 
@@ -175,6 +175,36 @@ def extract_binary_mask(segmentation, labels):
     return mask
 
 
+def sanitize_filename(name):
+    """
+    Gera nomes de arquivo seguros, sem espaços e sem caracteres especiais.
+    """
+    replacements = {
+        "ã": "a", "á": "a", "à": "a", "â": "a",
+        "é": "e", "ê": "e",
+        "í": "i",
+        "ó": "o", "ô": "o", "õ": "o",
+        "ú": "u",
+        "ç": "c",
+        "Ã": "A", "Á": "A", "À": "A", "Â": "A",
+        "É": "E", "Ê": "E",
+        "Í": "I",
+        "Ó": "O", "Ô": "O", "Õ": "O",
+        "Ú": "U",
+        "Ç": "C",
+    }
+
+    clean = name
+
+    for old, new in replacements.items():
+        clean = clean.replace(old, new)
+
+    clean = clean.lower()
+    clean = clean.replace(" ", "_")
+
+    return clean
+
+
 def save_binary_mask_nifti(mask, affine, header, organ_name, output_dir):
     """
     Salva uma máscara binária em formato NIfTI .nii.
@@ -190,7 +220,8 @@ def save_binary_mask_nifti(mask, affine, header, organ_name, output_dir):
 
     mask_nii = nib.Nifti1Image(mask_uint8, affine, new_header)
 
-    output_path = os.path.join(output_dir, f"mascara_{organ_name}.nii")
+    filename_name = sanitize_filename(organ_name)
+    output_path = os.path.join(output_dir, f"mascara_{filename_name}.nii")
 
     nib.save(mask_nii, output_path)
 
@@ -244,12 +275,16 @@ def calculate_statistics(values):
 # DVH CUMULATIVO
 # ============================================================
 
-def generate_cumulative_dvh(values, bins=100):
+def generate_cumulative_dvh(values, bins=300):
     """
     Gera o DVH cumulativo.
 
     Para cada dose D, informa qual porcentagem do volume do órgão
     recebeu dose maior ou igual a D.
+
+    Saída:
+    - dose_bins: valores reais de dose
+    - cumulative_percent: volume relativo acumulado em %
     """
     values = values[np.isfinite(values)]
 
@@ -271,7 +306,7 @@ def generate_cumulative_dvh(values, bins=100):
     )
 
     cumulative = np.cumsum(hist[::-1])[::-1]
-    cumulative_percent = cumulative / values.size * 100
+    cumulative_percent = cumulative / values.size * 100.0
 
     dose_bins = bin_edges[:-1]
 
@@ -280,26 +315,57 @@ def generate_cumulative_dvh(values, bins=100):
 
 def save_dvh_plot(dose_bins, cumulative_percent, organ_name, output_dir):
     """
-    Salva o gráfico individual do DVH cumulativo em PNG.
+    Salva o gráfico individual do DVH cumulativo.
 
-    Eixo X: dose real
-    Eixo Y: volume fracional acumulado
+    Eixo X: Dose real
+    Eixo Y: Volume relativo em %
     """
     plt.figure(figsize=(8, 6))
 
-    fractional_volume = cumulative_percent / 100.0
+    plt.plot(
+        dose_bins,
+        cumulative_percent,
+        linewidth=1.8,
+        label=organ_name
+    )
 
-    plt.plot(dose_bins, fractional_volume, label=organ_name)
-    plt.xlabel("Dose absorvida")
-    plt.ylabel("Volume fracional")
-    plt.title(f"DVH cumulativo - {organ_name}")
-    plt.grid(True)
-    plt.legend(loc="best")
+    plt.xlabel("Dose (Gy)")
+    plt.ylabel("Relative volume (%)")
+    plt.title(f"DVH - {organ_name}")
+
+    plt.xlim(left=0)
+    plt.ylim(0, 100)
+
+    plt.minorticks_on()
+
+    plt.grid(
+        True,
+        which="major",
+        linestyle="-",
+        linewidth=0.7,
+        alpha=0.7
+    )
+
+    plt.grid(
+        True,
+        which="minor",
+        linestyle="-",
+        linewidth=0.3,
+        alpha=0.35
+    )
+
+    plt.legend(
+        loc="upper right",
+        fontsize=8,
+        frameon=True
+    )
+
     plt.tight_layout()
 
-    output_path = os.path.join(output_dir, f"dvh_{organ_name}.png")
+    filename_name = sanitize_filename(organ_name)
+    output_path = os.path.join(output_dir, f"dvh_{filename_name}.png")
 
-    plt.savefig(output_path, dpi=300)
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()
 
     return output_path
@@ -308,6 +374,11 @@ def save_dvh_plot(dose_bins, cumulative_percent, organ_name, output_dir):
 def save_dvh_csv(dose_bins, cumulative_percent, organ_name, output_dir):
     """
     Salva os dados do DVH cumulativo em CSV.
+
+    Colunas:
+    - dose
+    - volume_percentual_acumulado
+    - volume_fracional_acumulado
     """
     df = pd.DataFrame({
         "dose": dose_bins,
@@ -315,7 +386,8 @@ def save_dvh_csv(dose_bins, cumulative_percent, organ_name, output_dir):
         "volume_fracional_acumulado": cumulative_percent / 100.0
     })
 
-    output_path = os.path.join(output_dir, f"dvh_{organ_name}.csv")
+    filename_name = sanitize_filename(organ_name)
+    output_path = os.path.join(output_dir, f"dvh_{filename_name}.csv")
 
     df.to_csv(output_path, index=False)
 
@@ -324,15 +396,14 @@ def save_dvh_csv(dose_bins, cumulative_percent, organ_name, output_dir):
 
 def save_all_dvh_plot(dvh_data, output_dir):
     """
-    Salva um único gráfico com todos os DVHs cumulativos.
-
-    Neste caso, a dose NÃO é normalizada.
+    Salva um único gráfico com todos os DVHs cumulativos
+    no estilo clássico:
 
     Eixo X:
-    - Dose real do arquivo .mhd
+    - Dose real em Gy
 
     Eixo Y:
-    - Volume fracional acumulado, de 0 a 1
+    - Relative volume (%) de 0 a 100
     """
     if len(dvh_data) == 0:
         print("Nenhum DVH disponível para gerar gráfico conjunto.")
@@ -340,7 +411,21 @@ def save_all_dvh_plot(dvh_data, output_dir):
 
     plt.figure(figsize=(10, 6))
 
-    for item in dvh_data:
+    linestyles = ["-", "--", "-.", ":"]
+    colors = [
+        "red",
+        "green",
+        "blue",
+        "magenta",
+        "cyan",
+        "black",
+        "orange",
+        "purple",
+        "brown",
+        "gray",
+    ]
+
+    for i, item in enumerate(dvh_data):
         organ_name = item["orgao"]
         dose_bins = item["dose_bins"]
         cumulative_percent = item["volume"]
@@ -352,20 +437,54 @@ def save_all_dvh_plot(dvh_data, output_dir):
             continue
 
         x = dose_bins
-        y = cumulative_percent / 100.0
+        y = cumulative_percent
 
-        plt.plot(x, y, linewidth=2, label=organ_name)
+        plt.plot(
+            x,
+            y,
+            linewidth=1.6,
+            linestyle=linestyles[i % len(linestyles)],
+            color=colors[i % len(colors)],
+            label=organ_name
+        )
 
-    plt.xlabel("Dose absorvida")
-    plt.ylabel("Volume fracional")
+    plt.xlabel("Dose (Gy)")
+    plt.ylabel("Relative volume (%)")
     plt.title("DVH cumulativo por órgão")
-    plt.grid(True)
-    plt.legend(loc="best")
+
+    plt.xlim(left=0)
+    plt.ylim(0, 100)
+
+    plt.minorticks_on()
+
+    plt.grid(
+        True,
+        which="major",
+        linestyle="-",
+        linewidth=0.7,
+        alpha=0.7
+    )
+
+    plt.grid(
+        True,
+        which="minor",
+        linestyle="-",
+        linewidth=0.3,
+        alpha=0.35
+    )
+
+    plt.legend(
+        loc="upper right",
+        fontsize=8,
+        frameon=True
+    )
+
     plt.tight_layout()
 
-    output_path = os.path.join(output_dir, "dvh_todos_orgaos.png")
+    output_path = os.path.join(
+        output_dir, "dvh_todos_orgaos_estilo_classico.png")
 
-    plt.savefig(output_path, dpi=300)
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()
 
     return output_path
@@ -464,7 +583,7 @@ def main():
         # DVH
         dose_bins, cumulative_percent = generate_cumulative_dvh(
             values,
-            bins=100
+            bins=300
         )
 
         if dose_bins is not None:
@@ -542,7 +661,7 @@ def main():
     results_df.to_csv(output_stats_path, index=False)
 
     # ========================================================
-    # SALVAR DVH CONJUNTO COM DOSE REAL NO EIXO X
+    # SALVAR DVH CONJUNTO ESTILO CLÁSSICO
     # ========================================================
 
     all_dvh_plot_path = save_all_dvh_plot(
