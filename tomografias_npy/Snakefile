@@ -53,7 +53,7 @@ rule convert_npy_to_nii:
         "benchmarks/convert_npy_to_nii/{sample}.tsv"
     shell:
         """
-        python npy2nii.py {input} --output {output} --spacing {params.spacing} {params.center_flag} {params.origin_flag}
+        python npy2nii.py {input} --output {output} --spacing {params.spacing} --lps {params.center_flag} {params.origin_flag}
         """
 
 rule convert_npy_to_mhd:
