@@ -10,12 +10,13 @@ import pandas as pd
 # CONFIGURAÇÕES
 # ============================================================
 
-# arquivo multi-label do TotalSegmentator
+# Arquivo multi-label do TotalSegmentator
 SEGMENTATION_PATH = "0801_clean_fdk_256.nii"
-# arquivo de dose gerado pela simulação
-DOSE_PATH = "Dose-total.mhd"
-OUTPUT_DIR = "resultados_dvh"
 
+# Arquivo de dose gerado pela simulação
+DOSE_PATH = "Dose-total.mhd"
+
+OUTPUT_DIR = "resultados_dvh"
 MASK_OUTPUT_DIR = os.path.join(OUTPUT_DIR, "mascaras_binarias")
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -36,9 +37,6 @@ os.makedirs(MASK_OUTPUT_DIR, exist_ok=True)
 # 16 = trachea
 # 51 = heart
 # 79 = spinal_cord
-#
-# Como o TotalSegmentator separa os pulmões por lobos,
-# agrupamos os lobos para formar pulmão esquerdo e pulmão direito.
 
 ORGAN_LABELS = {
     "pulmao_esquerdo": [10, 11],
@@ -162,7 +160,7 @@ def match_shapes(segmentation, dose):
 
 
 # ============================================================
-# PROCESSAMENTO POR ÓRGÃO
+# MÁSCARAS
 # ============================================================
 
 def extract_binary_mask(segmentation, labels):
@@ -198,6 +196,10 @@ def save_binary_mask_nifti(mask, affine, header, organ_name, output_dir):
 
     return output_path
 
+
+# ============================================================
+# DOSE POR ÓRGÃO
+# ============================================================
 
 def calculate_organ_dose(dose, mask):
     """
@@ -278,14 +280,20 @@ def generate_cumulative_dvh(values, bins=100):
 
 def save_dvh_plot(dose_bins, cumulative_percent, organ_name, output_dir):
     """
-    Salva o gráfico do DVH cumulativo em PNG.
+    Salva o gráfico individual do DVH cumulativo em PNG.
     """
+
     plt.figure(figsize=(8, 6))
-    plt.plot(dose_bins, cumulative_percent)
+
+    # Volume em fração, de 0 a 1
+    fractional_volume = cumulative_percent / 100.0
+
+    plt.plot(dose_bins, fractional_volume, label=organ_name)
     plt.xlabel("Dose")
-    plt.ylabel("Volume acumulado (%)")
+    plt.ylabel("Volume fracional")
     plt.title(f"DVH cumulativo - {organ_name}")
     plt.grid(True)
+    plt.legend(loc="best")
     plt.tight_layout()
 
     output_path = os.path.join(output_dir, f"dvh_{organ_name}.png")
@@ -302,11 +310,130 @@ def save_dvh_csv(dose_bins, cumulative_percent, organ_name, output_dir):
     """
     df = pd.DataFrame({
         "dose": dose_bins,
-        "volume_percentual_acumulado": cumulative_percent
+        "volume_percentual_acumulado": cumulative_percent,
+        "volume_fracional_acumulado": cumulative_percent / 100.0
     })
 
     output_path = os.path.join(output_dir, f"dvh_{organ_name}.csv")
 
+    df.to_csv(output_path, index=False)
+
+    return output_path
+
+
+def save_all_dvh_plot(dvh_data, output_dir, normalize_dose=False):
+    """
+    Salva um único gráfico com todos os DVHs cumulativos.
+
+    Parâmetros:
+    - dvh_data: lista de dicionários com:
+        {
+            "orgao": nome do órgão,
+            "dose_bins": array de doses,
+            "volume": array de volume acumulado em %
+        }
+
+    - normalize_dose:
+        True  -> eixo X fica normalizado de 0 a 1, parecido com a imagem exemplo.
+        False -> eixo X usa a dose real.
+    """
+
+    xlabel = "Dose"
+    if len(dvh_data) == 0:
+        print("Nenhum DVH disponível para gerar gráfico conjunto.")
+        return None
+
+    plt.figure(figsize=(10, 6))
+
+    for item in dvh_data:
+        organ_name = item["orgao"]
+        dose_bins = item["dose_bins"]
+        cumulative_percent = item["volume"]
+
+        if dose_bins is None or cumulative_percent is None:
+            continue
+
+        if len(dose_bins) == 0:
+            continue
+
+        if normalize_dose:
+            max_dose = np.max(dose_bins)
+
+            if max_dose > 0:
+                x = dose_bins / max_dose
+            else:
+                x = dose_bins
+
+            xlabel = "Dose fracional (normalizada por dose máxima)"
+        else:
+            x = dose_bins
+            xlabel = "Dose"
+
+        y = cumulative_percent / 100.0
+
+        plt.plot(x, y, linewidth=2, label=organ_name)
+
+    plt.xlabel(xlabel)
+    plt.ylabel("Volume fracional")
+    plt.title("DVH cumulativo por órgão")
+    plt.grid(True)
+    plt.legend(loc="best")
+    plt.tight_layout()
+
+    output_path = os.path.join(output_dir, "dvh_todos_orgaos.png")
+
+    plt.savefig(output_path, dpi=300)
+    plt.close()
+
+    return output_path
+
+
+def save_all_dvh_csv(dvh_data, output_dir, normalize_dose=True):
+    """
+    Salva todos os DVHs em um único CSV.
+
+    Cada linha contém:
+    - órgão
+    - dose
+    - dose_fracional
+    - volume_percentual_acumulado
+    - volume_fracional_acumulado
+    """
+    rows = []
+
+    for item in dvh_data:
+        organ_name = item["orgao"]
+        dose_bins = item["dose_bins"]
+        cumulative_percent = item["volume"]
+
+        if dose_bins is None or cumulative_percent is None:
+            continue
+
+        if len(dose_bins) == 0:
+            continue
+
+        max_dose = np.max(dose_bins)
+
+        for dose_value, volume_percent in zip(dose_bins, cumulative_percent):
+            if normalize_dose and max_dose > 0:
+                dose_fractional = dose_value / max_dose
+            else:
+                dose_fractional = dose_value
+
+            rows.append({
+                "orgao": organ_name,
+                "dose": dose_value,
+                "dose_fracional": dose_fractional,
+                "volume_percentual_acumulado": volume_percent,
+                "volume_fracional_acumulado": volume_percent / 100.0
+            })
+
+    if len(rows) == 0:
+        return None
+
+    df = pd.DataFrame(rows)
+
+    output_path = os.path.join(output_dir, "dvh_todos_orgaos.csv")
     df.to_csv(output_path, index=False)
 
     return output_path
@@ -325,6 +452,7 @@ def main():
     segmentation, dose = match_shapes(segmentation, dose)
 
     results = []
+    dvh_data = []
 
     for organ_name, labels in ORGAN_LABELS.items():
         print("\n" + "=" * 60)
@@ -340,6 +468,7 @@ def main():
                 f"Aviso: os labels {labels} não foram encontrados para {organ_name}.")
             continue
 
+        # Salva máscara binária em .nii
         mask_path = save_binary_mask_nifti(
             mask=mask,
             affine=affine,
@@ -348,18 +477,31 @@ def main():
             output_dir=MASK_OUTPUT_DIR
         )
 
+        # Calcula dose dentro do órgão
         organ_dose, values = calculate_organ_dose(dose, mask)
 
+        # Estatísticas
         stats = calculate_statistics(values)
 
         stats["orgao"] = organ_name
         stats["labels"] = ",".join(map(str, labels))
         stats["arquivo_mascara"] = mask_path
 
+        # DVH
         dose_bins, cumulative_percent = generate_cumulative_dvh(
-            values, bins=100)
+            values,
+            bins=100
+        )
 
         if dose_bins is not None:
+            # Guarda dados para o gráfico conjunto
+            dvh_data.append({
+                "orgao": organ_name,
+                "dose_bins": dose_bins,
+                "volume": cumulative_percent
+            })
+
+            # Salva gráfico individual
             plot_path = save_dvh_plot(
                 dose_bins=dose_bins,
                 cumulative_percent=cumulative_percent,
@@ -367,6 +509,7 @@ def main():
                 output_dir=OUTPUT_DIR
             )
 
+            # Salva CSV individual
             csv_path = save_dvh_csv(
                 dose_bins=dose_bins,
                 cumulative_percent=cumulative_percent,
@@ -376,6 +519,9 @@ def main():
 
             stats["arquivo_dvh_png"] = plot_path
             stats["arquivo_dvh_csv"] = csv_path
+        else:
+            stats["arquivo_dvh_png"] = None
+            stats["arquivo_dvh_csv"] = None
 
         results.append(stats)
 
@@ -391,6 +537,10 @@ def main():
         print("\nNenhum órgão principal foi encontrado na segmentação.")
         print("Verifique se o arquivo realmente é multi-label do TotalSegmentator.")
         return
+
+    # ========================================================
+    # SALVAR ESTATÍSTICAS GERAIS
+    # ========================================================
 
     results_df = pd.DataFrame(results)
 
@@ -417,11 +567,31 @@ def main():
 
     results_df.to_csv(output_stats_path, index=False)
 
+    # ========================================================
+    # SALVAR DVH CONJUNTO
+    # ========================================================
+
+    all_dvh_plot_path = save_all_dvh_plot(
+        dvh_data=dvh_data,
+        output_dir=OUTPUT_DIR,
+        normalize_dose=True
+        # normalize_dose=True
+    )
+
+    all_dvh_csv_path = save_all_dvh_csv(
+        dvh_data=dvh_data,
+        output_dir=OUTPUT_DIR,
+        normalize_dose=True
+        # normalize_dose=True
+    )
+
     print("\n" + "=" * 60)
     print("Processamento finalizado.")
     print("Estatísticas salvas em:", output_stats_path)
     print("Máscaras binárias salvas em:", MASK_OUTPUT_DIR)
-    print("Arquivos DVH salvos na pasta:", OUTPUT_DIR)
+    print("Arquivos DVH individuais salvos na pasta:", OUTPUT_DIR)
+    print("DVH conjunto salvo em:", all_dvh_plot_path)
+    print("CSV do DVH conjunto salvo em:", all_dvh_csv_path)
 
 
 if __name__ == "__main__":
