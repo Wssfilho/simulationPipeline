@@ -251,30 +251,46 @@ def generate_cumulative_dvh(values, bins=100):
     Para cada dose D, informa qual porcentagem do volume do órgão
     recebeu dose maior ou igual a D.
     """
+    # Remove valores não finitos (NaN, inf) para não afetar os cálculos
     values = values[np.isfinite(values)]
 
+    # Se não houver valores após a filtragem, retorna None para indicar
+    # que não é possível gerar um DVH
     if values.size == 0:
         return None, None
 
+    # Determina os limites mínimo e máximo de dose nos dados
     dose_min = float(np.min(values))
     dose_max = float(np.max(values))
 
+    # Se todas as doses forem iguais, o DVH cumulativo é trivial:
+    # uma única barra com 100% do volume recebendo essa dose
     if dose_min == dose_max:
         dose_bins = np.array([dose_min])
         cumulative_percent = np.array([100.0])
         return dose_bins, cumulative_percent
 
+    # Calcula o histograma das doses usando o número de bins solicitado
+    # 'hist' contém os contadores por bin e 'bin_edges' as bordas dos bins
     hist, bin_edges = np.histogram(
         values,
         bins=bins,
         range=(dose_min, dose_max)
     )
 
+    # Constrói o DVH cumulativo: soma acumulada dos contadores a partir
+    # do bin mais alto para o mais baixo. hist[::-1] inverte o array,
+    # np.cumsum faz a soma acumulada e [::-1] reverte de volta à ordem
     cumulative = np.cumsum(hist[::-1])[::-1]
+
+    # Converte contagens acumuladas em porcentagem do volume total
     cumulative_percent = cumulative / values.size * 100
 
+    # Os pontos de dose associados aos contadores são as bordas iniciais
+    # de cada bin (exclui a última borda que é o limite superior do último bin)
     dose_bins = bin_edges[:-1]
 
+    # Retorna os valores de dose (bins) e a porcentagem cumulativa
     return dose_bins, cumulative_percent
 
 
