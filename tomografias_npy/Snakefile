@@ -107,7 +107,7 @@ rule simulate_gate:
     params:
         inicio=gate_inicio,
         image_rel=lambda wc, input: input.mhd,
-        output_dir="../tomografias_npy",
+        output_dir="../tomografias_npy/output/",
         tag=lambda wc: wc.sample
     message:
         "Simulando {input.mhd}"
