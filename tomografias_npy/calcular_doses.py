@@ -14,7 +14,7 @@ import pandas as pd
 SEGMENTATION_PATH = "0801_clean_fdk_256.nii"
 
 # Arquivo de dose gerado pela simulação
-DOSE_PATH = "Dose-total.mhd"
+DOSE_PATH = "output/Dose-total.mhd"
 
 OUTPUT_DIR = "resultados_dvh"
 MASK_OUTPUT_DIR = os.path.join(OUTPUT_DIR, "mascaras_binarias")

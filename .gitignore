@@ -27,4 +27,6 @@ tomografias_npy/resultados
 tomografias_npy/data
 tomografias_npy/0801_clean_fdk_256.nii
 tomografias_npy/Dose-total.raw
+tomografias_npy/Dose-total.mhd
+
 tomografias_npy/resultados_dvh

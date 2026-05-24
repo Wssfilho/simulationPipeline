@@ -35,8 +35,14 @@ if origin_mhd is not None:
 rule all:
     input:
         expand("resultados/{sample}.nii", sample=samples),
-        expand("output/Slide-{sample}.mhd", sample=samples_for_mhd),
-        expand("output/stat-{sample}.txt", sample=samples_for_mhd)
+        # expand("output/Slide-{sample}.mhd", sample=samples_for_mhd),
+        # expand("output/stat-{sample}.txt", sample=samples_for_mhd),
+        # "output/Dose-total.mhd",
+        # "output/Edep-total.mhd",
+        "resultados_dvh/estatisticas_dose_por_orgao.csv",
+        "resultados_dvh/dvh_todos_orgaos_estilo_classico.png",
+        "resultados_dvh/dvh_todos_orgaos.csv",
+        directory("resultados_dvh/mascaras_binarias")
 
 rule convert_npy_to_nii:
     input:
@@ -101,7 +107,7 @@ rule simulate_gate:
     params:
         inicio=gate_inicio,
         image_rel=lambda wc, input: input.mhd,
-        output_dir="../tomografias_npy/output",
+        output_dir="../tomografias_npy",
         tag=lambda wc: wc.sample
     message:
         "Simulando {input.mhd}"
@@ -112,5 +118,41 @@ rule simulate_gate:
         """
         cd ../gate-first-simulator
         python ../tomografias_npy/minDetec_DT_Wilson.py {params.inicio} --image "{params.image_rel}" --output-dir "{params.output_dir}" --tag "{params.tag}"
+        """
+
+rule somarResultados:
+    input:
+        slides=expand("output/Slide-{sample}.mhd", sample=samples_for_mhd),
+        stats=expand("output/stat-{sample}.txt", sample=samples_for_mhd)
+    output:
+        dose="output/Dose-total.mhd",
+        edep="output/Edep-total.mhd"
+    message:
+        "Somando resultados de dose/edep em output/"
+    benchmark:
+        "benchmarks/somarResultados/total.tsv"
+    shell:
+        """
+        python somarResultados.py
+        """
+
+rule calcular_doses:
+    input:
+        seg="resultados/0801_clean_fdk_256.nii",
+        dose="output/Dose-total.mhd"
+    output:
+        stats="resultados_dvh/estatisticas_dose_por_orgao.csv",
+        dvh_all_png="resultados_dvh/dvh_todos_orgaos_estilo_classico.png",
+        dvh_all_csv="resultados_dvh/dvh_todos_orgaos.csv",
+        masks=directory("resultados_dvh/mascaras_binarias")
+    message:
+        "Gerando DVH a partir de calcular_doses.py"
+    benchmark:
+        "benchmarks/calcular_doses/total.tsv"
+    shell:
+        """
+        ln -sf "{input.seg}" 0801_clean_fdk_256.nii
+        ln -sf "{input.dose}" Dose-total.mhd
+        python calcular_doses.py
         """
   
