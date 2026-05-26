@@ -120,7 +120,7 @@ rule simulate_gate:
         python ../tomografias_npy/minDetec_DT_Wilson.py {params.inicio} --image "{params.image_rel}" --output-dir "{params.output_dir}" --tag "{params.tag}"
         """
 
-rule somarResultados:
+rule sumResults:
     input:
         slides=expand("output/Slide-{sample}.mhd", sample=samples_for_mhd),
         stats=expand("output/stat-{sample}.txt", sample=samples_for_mhd)
@@ -130,13 +130,13 @@ rule somarResultados:
     message:
         "Somando resultados de dose/edep em output/"
     benchmark:
-        "benchmarks/somarResultados/total.tsv"
+        "benchmarks/sumResults/total.tsv"
     shell:
         """
-        python somarResultados.py
+        python sumResults.py
         """
 
-rule calcular_doses:
+rule calculateDoses:
     input:
         seg="resultados/0801_clean_fdk_256.nii",
         dose="output/Dose-total.mhd"
@@ -146,13 +146,13 @@ rule calcular_doses:
         dvh_all_csv="resultados_dvh/dvh_todos_orgaos.csv",
         masks=directory("resultados_dvh/mascaras_binarias")
     message:
-        "Gerando DVH a partir de calcular_doses.py"
+        "Gerando DVH a partir de calculateDoses.py"
     benchmark:
-        "benchmarks/calcular_doses/total.tsv"
+        "benchmarks/calculateDoses/total.tsv"
     shell:
         """
         ln -sf "{input.seg}" 0801_clean_fdk_256.nii
         ln -sf "{input.dose}" Dose-total.mhd
-        python calcular_doses.py
+        python calculateDoses.py
         """
   
