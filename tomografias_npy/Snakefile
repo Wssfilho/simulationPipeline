@@ -97,7 +97,7 @@ rule segment_with_totalsegmentator:
         python segmentation.py "{input}" --output "{output}"
         """
 
-rule simulate_gate:
+rule simulateGate:
     input:
         mhd=rules.convert_npy_to_mhd.output,
         seg="resultados/{sample}.nii"
