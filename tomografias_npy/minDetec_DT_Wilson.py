@@ -74,7 +74,7 @@ if __name__ == "__main__":
     # add a material database
     sim.volume_manager.add_material_database(args.materials_db)
 
-    sim.number_of_threads = 60
+    sim.number_of_threads = 1
     sim.output_dir = args.output_dir
 
     sim.progress_bar = True
@@ -179,23 +179,36 @@ if __name__ == "__main__":
     # cut
 
     # for fluency actor
-    detector_actor = sim.add_actor("FluenceActor", "detector_actor")
-    detector_actor.attached_to = detector_plane
-    detector_actor.output_filename = f"Slide-{tag}.mhd"
-    detector_actor.spacing = [1 * mm, 2 * mm, 2 * mm]
-    detector_actor.size = [1, 350, 350]
-    detector_actor.output_coordinate_system = "local"
-    detector_actor.keep_data_per_run = True
+    # detector_actor = sim.add_actor("FluenceActor", "detector_actor")
+    # detector_actor.attached_to = detector_plane
+    # detector_actor.output_filename = f"Slide-{tag}.mhd"
+    # detector_actor.spacing = [1 * mm, 2 * mm, 2 * mm]
+    # detector_actor.size = [1, 350, 350]
+    # detector_actor.output_coordinate_system = "local"
+    # detector_actor.keep_data_per_run = True
 
     # for dosimetry
-    # dose_actor = sim.add_actor("DoseActor", "dose_actor")
-    # dose_actor.attached_to = "patient"
-    # dose_actor.edep_uncertainty.active = True
-    # dose_actor.size = [256, 256, 256]
-    # dose_actor.spacing = [1.5 * mm, 1.5 * mm, 1.5 * mm]
-    # dose_actor.output_coordinate_system = "attached_to_image"
-    # dose_actor.translation = [0 * mm, 0 * mm, -0 * mm]
-    # dose_actor.hit_type = "random"
+    dose_actor = sim.add_actor("DoseActor", "dose_actor")
+    dose_actor.attached_to = "patient"
+    dose_actor.edep_uncertainty.active = True
+    dose_actor.size = [256, 256, 256]
+    dose_actor.spacing = [1.5 * mm, 1.5 * mm, 1.5 * mm]
+    dose_actor.output_coordinate_system = "attached_to_image"
+    dose_actor.translation = [0 * mm, 0 * mm, -0 * mm]
+    dose_actor.hit_type = "random"
+    dose_actor.keep_data_per_run = False
+
+    # Saídas
+    # energia depositada, normalmente já ativa
+    dose_actor.edep.active = True
+    dose_actor.dose.active = True             # dose absorvida
+    dose_actor.dose_uncertainty.active = False  # incerteza estatística da dose
+
+    # Arquivos de saída
+    dose_actor.edep.output_filename = f"Edep-{tag}.mhd"
+    dose_actor.dose.output_filename = f"Dose-{tag}.mhd"
+    dose_actor.dose_uncertainty.output_filename = f"uDose-{tag}.mhd"
+    dose_actor.edep_uncertainty.output_filename = f"uEdep-{tag}.mhd"
 
     stats = sim.add_actor("SimulationStatisticsActor", "stats")
     stats.track_types_flag = True
@@ -209,7 +222,7 @@ if __name__ == "__main__":
     source.position.type = "box"
     source.position.size = [1 * nm, 2 * 15 * mm, 2 * 15 * mm]
     source.direction.type = "focused"
-    source.activity = 1E6 * Bq
+    source.activity = 1E2 * Bq
     # FIXME warning in world coord ! Should be in mother coord system
     source.direction.focus_point = [gantry.translation[0] - 60 * mm, 0, 0]
 
@@ -233,7 +246,7 @@ if __name__ == "__main__":
 
     # sim.run_timing_intervals = [[i * sec, (i + 1) * sec] for i in range(n)]
 
-    sim.run(start_new_process=True)
+    sim.run(start_new_process=False)
 
     # print results at the end
     # print(stats)

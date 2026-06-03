@@ -86,8 +86,6 @@ rule segment_with_totalsegmentator:
         "imagens_ct/{sample}.nii.gz"
     output:
         "resultados/{sample}.nii"
-    threads:
-        1
     message:
         "Segmentando {input} em {output}"
     benchmark:
@@ -102,7 +100,8 @@ rule simulateGate:
         mhd=rules.convert_npy_to_mhd.output,
         seg="resultados/{sample}.nii"
     output:
-        slide="output/Slide-{sample}.mhd",
+        dose="output/Dose-{sample}.mhd",
+        edep="output/Edep-{sample}.mhd",
         stats="output/stat-{sample}.txt"
     params:
         inicio=gate_inicio,
@@ -122,7 +121,8 @@ rule simulateGate:
 
 rule sumResults:
     input:
-        slides=expand("output/Slide-{sample}.mhd", sample=samples_for_mhd),
+        dose=expand("output/Dose-{sample}.mhd", sample=samples_for_mhd),
+        edep=expand("output/Edep-{sample}.mhd", sample=samples_for_mhd),
         stats=expand("output/stat-{sample}.txt", sample=samples_for_mhd)
     output:
         dose="output/Dose-total.mhd",
