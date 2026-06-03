@@ -116,7 +116,7 @@ rule simulateGate:
     shell:
         """
         cd ../gate-first-simulator
-        python ../tomografias_npy/minDetec_DT_Wilson.py {params.inicio} --image "{params.image_rel}" --output-dir "{params.output_dir}" --tag "{params.tag}"
+        python ../tomografias_npy/minDetec_DT.py {params.inicio} --image "{params.image_rel}" --output-dir "{params.output_dir}" --tag "{params.tag}"
         """
 
 rule sumResults:
