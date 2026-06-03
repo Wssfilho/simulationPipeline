@@ -246,7 +246,9 @@ if __name__ == "__main__":
 
     # sim.run_timing_intervals = [[i * sec, (i + 1) * sec] for i in range(n)]
 
-    sim.run(start_new_process=False)
+    sim.run(start_new_process=True)
+    # para testes
+    # sim.run(start_new_process=False)
 
     # print results at the end
     # print(stats)
