@@ -12,7 +12,8 @@
       "Bash(python3 -c \"import pdfplumber; print\\('ok'\\)\")",
       "Bash(python3 -c \"import pypdf; print\\('pypdf ok'\\)\")",
       "Bash(cp \"/c/Users/wilso/Downloads/main \\(4\\).pdf\" /tmp/tcc.pdf)",
-      "Bash(pdftotext -layout /tmp/tcc.pdf /tmp/tcc.txt)"
+      "Bash(pdftotext -layout /tmp/tcc.pdf /tmp/tcc.txt)",
+      "Bash(wsl.exe -d ubuntu-22.04 -- bash -lc 'bash $HOME/tcc/tomografias_npy/tcc_resultados/_test_parallel.sh')"
     ]
   }
 }

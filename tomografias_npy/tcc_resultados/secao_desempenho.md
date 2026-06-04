@@ -2,6 +2,12 @@
 
 ## Metodologia (leia antes de colar no TCC)
 
+## Como rodar com 90 HPC
+nohup snakemake --cores 48 ou 90 --keep-going --rerun-incomplete \
+    > snakemake_360.log 2>&1 &
+
+## Rodar no pc comum:
+ snakemake --cores 2 --latency-wait 30 --config gate_angulo_final=16
 Todas as fontes de dados sao REAIS e medidas:
 
 1. **Benchmarks do Snakemake (maquina local)** — diretiva `benchmark`, um `.tsv`

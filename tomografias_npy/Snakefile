@@ -149,12 +149,11 @@ rule sumResults:
     input:
         dose=expand("output/Dose-{inicio}.mhd", inicio=inicios),
         edep=expand("output/Edep-{inicio}.mhd", inicio=inicios),
-        stats=expand("output/stat-{inicio}.txt", inicio=inicios)
     output:
         dose="output/Dose-total.mhd",
-        edep="output/Edep-total.mhd"
+        edep="output/Edep-total.mhd",
     message:
-        "Somando resultados de dose/edep em output/"
+        "Somando dose/edep e consolidando estatisticas em output/"
     benchmark:
         "benchmarks/sumResults/total.tsv"
     shell:
