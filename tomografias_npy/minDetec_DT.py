@@ -44,7 +44,7 @@ if __name__ == "__main__":
     inicio = args.inicio
     tag = args.tag if args.tag is not None else str(args.inicio)
 
-    n = 1
+    n = 4
 
     # units
     m = gate.g4_units.m
@@ -222,7 +222,7 @@ if __name__ == "__main__":
     source.position.type = "box"
     source.position.size = [1 * nm, 2 * 15 * mm, 2 * 15 * mm]
     source.direction.type = "focused"
-    source.activity = 1E2 * Bq
+    source.activity = 5E6 * Bq
     # FIXME warning in world coord ! Should be in mother coord system
     source.direction.focus_point = [gantry.translation[0] - 60 * mm, 0, 0]
 

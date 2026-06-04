@@ -5,7 +5,14 @@
       "Bash(wsl -d ubuntu-22.04 bash -lc 'cd /home/wilson/tcc/tomografias_npy && echo \"=== data/ ===\" && ls -la data/ 2>&1 | head -40 && echo \"=== siblings ===\" && ls -la .. | head -20 && echo \"=== output/ ===\" && ls -la output/ 2>&1 | head && echo \"=== gate sim dir ===\" && ls -d ../gate-first-simulator 2>&1 && echo \"=== py files ===\" && ls *.py')",
       "PowerShell($ram=\\(Get-CimInstance Win32_ComputerSystem\\).TotalPhysicalMemory/1GB; \"Host RAM total: {0:N1} GB\" -f $ram; \"Logical CPUs: $\\(\\(Get-CimInstance Win32_ComputerSystem\\).NumberOfLogicalProcessors\\)\"; $cfg=\"$env:USERPROFILE\\\\.wslconfig\"; if\\(Test-Path $cfg\\){\"--- .wslconfig ---\"; Get-Content $cfg} else {\".wslconfig NAO existe \\(WSL usa padrao: ~50% da RAM\\)\"})",
       "Bash(wsl -d *)",
-      "Bash(wsl -d ubuntu-22.04 bash -lc 'wc -l /tmp/tcc.txt; sed -n \"1,120p\" /tmp/tcc.txt')"
+      "Bash(wsl -d ubuntu-22.04 bash -lc 'wc -l /tmp/tcc.txt; sed -n \"1,120p\" /tmp/tcc.txt')",
+      "Read(///wsl.localhost/ubuntu-22.04//**)",
+      "Bash(python3 -c ' *)",
+      "Read(//tmp/**)",
+      "Bash(python3 -c \"import pdfplumber; print\\('ok'\\)\")",
+      "Bash(python3 -c \"import pypdf; print\\('pypdf ok'\\)\")",
+      "Bash(cp \"/c/Users/wilso/Downloads/main \\(4\\).pdf\" /tmp/tcc.pdf)",
+      "Bash(pdftotext -layout /tmp/tcc.pdf /tmp/tcc.txt)"
     ]
   }
 }

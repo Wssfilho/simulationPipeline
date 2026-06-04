@@ -1,0 +1,8 @@
+etapa,wall_s,cpu_s,rss_MB,pct_wall
+Simulacao Monte Carlo (GATE),211.1513,194.05,2417.75,81.37
+Segmentacao (TotalSegmentator),38.3929,13.90,5179.57,14.80
+Calculo de doses (DVH),7.6373,7.42,537.15,2.94
+Conversao NPY->NIfTI,1.2280,0.90,241.50,0.47
+Conversao NPY->MHD,0.6357,0.44,281.92,0.24
+Consolidacao (soma de doses),0.4366,0.00,3.12,0.17
+TOTAL,259.4818,,,100.00

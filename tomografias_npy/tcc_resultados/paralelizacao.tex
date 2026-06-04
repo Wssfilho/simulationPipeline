@@ -1,0 +1,96 @@
+% ============================================================================
+%  PARALELIZAÇÃO DA AQUISIÇÃO + LISTING DO SCRIPT (apêndice)
+% ----------------------------------------------------------------------------
+%  PACOTES NECESSÁRIOS no preâmbulo do main.tex:
+%     \usepackage{listings}
+%     \usepackage{xcolor}
+%
+%  Cole o bloco "CONFIG DO LISTINGS" abaixo UMA VEZ no preâmbulo (ou em um
+%  arquivo de estilo). Depois use os trechos (1) e (2) onde indicado.
+% ============================================================================
+
+
+% ----------------------------------------------------------------------------
+%  CONFIG DO LISTINGS  (colar no preâmbulo, uma única vez)
+% ----------------------------------------------------------------------------
+\definecolor{codegray}{gray}{0.95}
+\definecolor{codecomment}{rgb}{0.25,0.50,0.35}
+\definecolor{codekw}{rgb}{0.10,0.10,0.70}
+\definecolor{codestr}{rgb}{0.60,0.20,0.20}
+
+\lstdefinestyle{shell}{
+  language=bash,
+  backgroundcolor=\color{codegray},
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{codekw}\bfseries,
+  commentstyle=\color{codecomment}\itshape,
+  stringstyle=\color{codestr},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=8pt,
+  frame=single,
+  rulecolor=\color{gray!50},
+  breaklines=true,
+  breakatwhitespace=false,
+  showstringspaces=false,
+  tabsize=2,
+  captionpos=b,
+  literate={ç}{{\c c}}1 {ã}{{\~a}}1 {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1
+           {ó}{{\'o}}1 {õ}{{\~o}}1 {ú}{{\'u}}1 {â}{{\^a}}1 {ê}{{\^e}}1
+}
+% ----------------------------------------------------------------------------
+
+
+% ============================================================================
+%  (1) PARÁGRAFO PARA A SUBSEÇÃO DE PARALELIZAÇÃO (corpo do texto)
+% ============================================================================
+
+A orquestração do fluxo de trabalho --- conversão de formatos, segmentação,
+simulação e cálculo de dose --- é realizada pelo Snakemake, que também registra
+automaticamente as métricas de desempenho de cada etapa. A paralelização angular
+da simulação no ambiente HPC, por sua vez, foi conduzida por um \textit{script}
+de \textit{shell} (Apêndice~\ref{ap:lancador}), estratégia adequada à natureza
+embaraçosamente paralela da aquisição, em que os processos não trocam informação
+entre si. O \textit{script} percorre os ângulos iniciais de 0 a 356 em passos de
+4 e lança, em segundo plano (\texttt{nohup \dots\ \&}), as 90 instâncias
+independentes do simulador, cada uma processando quatro projeções ($n=4$) e
+gravando sua própria saída em um arquivo de \textit{log} distinto. Dessa forma,
+o sistema operacional distribui os 90 processos pelos núcleos disponíveis, e o
+uso de \texttt{nohup} garante a continuidade da execução mesmo após o
+encerramento da sessão de acesso remoto ao servidor.
+
+
+% ============================================================================
+%  (2) APÊNDICE COM O LISTING DO SCRIPT
+%      (coloque após \appendix, no fim do documento)
+% ============================================================================
+
+\chapter{Script de lançamento da aquisição angular}
+\label{ap:lancador}
+% Se o seu modelo usar \section em vez de \chapter para apêndices, troque acima.
+
+O \textit{script} a seguir foi utilizado no ambiente HPC para disparar, de forma
+paralela, as 90 execuções independentes da simulação que compõem a aquisição
+completa de $360^\circ$. Cada execução recebe como argumento o ângulo inicial
+\texttt{inicio} e processa quatro projeções consecutivas.
+
+\begin{lstlisting}[style=shell,caption={Lançador em \textit{shell} das 90
+instâncias paralelas da simulação (passo angular de $4^\circ$, $n=4$ projeções
+por instância).},label={lst:lancador}]
+#!/bin/bash
+source ~/opengate_env/bin/activate
+for ((i=0; i<360; i+=4)); do
+  nohup ~/opengate_env/bin/python \
+    ~/Simulations_opengate/IC_Wilson/minDetec_DT_WilsonDose.py "$i" \
+    > "salida${i}.log" 2>&1 &
+done
+\end{lstlisting}
+
+\noindent
+O laço gera os valores \texttt{0, 4, 8, \dots, 356} (90 iterações); o operador
+\texttt{\&} envia cada processo para segundo plano sem aguardar seu término,
+de modo que todas as instâncias são iniciadas simultaneamente. A redireção
+\texttt{> "salida\$\{i\}.log" 2>\&1} consolida a saída padrão e a saída de erro
+de cada instância em um arquivo de \textit{log} próprio
+(\texttt{salida0.log}, \texttt{salida4.log}, \dots), facilitando o
+monitoramento e a depuração individual dos \textit{jobs}.
