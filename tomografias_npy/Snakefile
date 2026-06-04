@@ -11,6 +11,16 @@ gate_inicio = config.get("gate_inicio", 0)
 center_mhd = config.get("center_mhd", False)
 origin_mhd = config.get("origin_mhd", None)
 
+# --- Varredura angular da aquisicao CBCT ---------------------------------
+# A aquisicao de 360 graus e decomposta em jobs independentes; cada job
+# processa n=4 projecoes a partir de um angulo inicial 'inicio'.
+# Os angulos vao de 'gate_angulo_inicial' (0) ate 'gate_angulo_final' (360),
+# em passos de 'gate_passo' (4) -> por padrao, 90 jobs (0,4,8,...,356).
+# Controle a quantidade pela linha de comando: snakemake --cores N
+gate_angulo_final = config.get("gate_angulo_final", 360)
+gate_passo = config.get("gate_passo", 4)
+inicios = list(range(0, gate_angulo_final, gate_passo))
+
 if len(spacing) != 3:
     raise WorkflowError(
         "config.yaml deve conter spacing com 3 valores: [SX, SY, SZ]."
@@ -21,6 +31,14 @@ if not samples:
         "Nenhuma entrada encontrada. Coloque arquivos .npy na pasta atual "
         "ou arquivos .nii.gz em imagens_ct/."
     )
+
+# A varredura angular (regra simulateGate) assume uma unica amostra .npy,
+# pois sumResults.py soma todos os Dose-*.mhd de output/ indistintamente.
+if not samples_for_mhd:
+    raise WorkflowError(
+        "Nenhuma amostra .npy encontrada para a simulacao (samples_for_mhd vazio)."
+    )
+SAMPLE = samples_for_mhd[0]
 
 if origin_mhd is not None:
     if len(origin_mhd) != 3:
@@ -96,34 +114,42 @@ rule segment_with_totalsegmentator:
         """
 
 rule simulateGate:
+    # Um job por angulo inicial. tag = inicio -> gera Dose-0.mhd, Dose-4.mhd, ...
+    # esquema esperado por sumResults.py (glob Dose-*.mhd).
+    # Paralelismo: cada job usa 1 thread; controle quantos rodam de uma vez
+    # com 'snakemake --cores N' (N jobs simultaneos; o restante e enfileirado).
     input:
-        mhd=rules.convert_npy_to_mhd.output,
-        seg="resultados/{sample}.nii"
+        mhd=f"../tomografias_npy/data/{SAMPLE}.mhd",
+        seg=f"resultados/{SAMPLE}.nii"
     output:
-        dose="output/Dose-{sample}.mhd",
-        edep="output/Edep-{sample}.mhd",
-        stats="output/stat-{sample}.txt"
+        dose="output/Dose-{inicio}.mhd",
+        edep="output/Edep-{inicio}.mhd",
+        stats="output/stat-{inicio}.txt"
+    wildcard_constraints:
+        inicio=r"\d+"
     params:
-        inicio=gate_inicio,
-        image_rel=lambda wc, input: input.mhd,
         output_dir="../tomografias_npy/output/",
-        tag=lambda wc: wc.sample
+        tag=lambda wc: wc.inicio
+    threads: 1
     message:
-        "Simulando {input.mhd}"
+        "Simulando projecoes a partir do angulo {wildcards.inicio} (amostra "
+        + SAMPLE + ")"
     benchmark:
-        "benchmarks/gate/{sample}.tsv"
-
+        "benchmarks/gate/{inicio}.tsv"
     shell:
         """
         cd ../gate-first-simulator
-        python ../tomografias_npy/minDetec_DT.py {params.inicio} --image "{params.image_rel}" --output-dir "{params.output_dir}" --tag "{params.tag}"
+        python ../tomografias_npy/minDetec_DT.py {wildcards.inicio} \
+            --image "{input.mhd}" \
+            --output-dir "{params.output_dir}" \
+            --tag "{params.tag}"
         """
 
 rule sumResults:
     input:
-        dose=expand("output/Dose-{sample}.mhd", sample=samples_for_mhd),
-        edep=expand("output/Edep-{sample}.mhd", sample=samples_for_mhd),
-        stats=expand("output/stat-{sample}.txt", sample=samples_for_mhd)
+        dose=expand("output/Dose-{inicio}.mhd", inicio=inicios),
+        edep=expand("output/Edep-{inicio}.mhd", inicio=inicios),
+        stats=expand("output/stat-{inicio}.txt", inicio=inicios)
     output:
         dose="output/Dose-total.mhd",
         edep="output/Edep-total.mhd"

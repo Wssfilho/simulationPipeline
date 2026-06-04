@@ -91,9 +91,12 @@ HPC, portanto, \emph{não reside na velocidade por núcleo, mas na densidade de
 paralelismo}.
 
 A aquisição CBCT de $360^\circ$ possui paralelismo trivial: ela é decomposta em
-\textbf{90 execuções independentes} do \textit{script} (argumento \texttt{inicio}
-de 0 a 356, em passos de 4), sem comunicação entre os processos. Cada execução
---- doravante denominada \textit{job} --- processa quatro projeções ($n=4$).
+\textbf{90 execuções independentes} (argumento \texttt{inicio} de 0 a 356, em
+passos de 4), sem comunicação entre os processos. Cada execução --- doravante
+denominada \textit{job} --- processa quatro projeções ($n=4$). A varredura
+angular foi integrada ao Snakemake por meio de um \textit{wildcard} de ângulo,
+de modo que a própria ferramenta gera os 90 \textit{jobs} e os agenda conforme o
+número de núcleos informado na linha de comando (\texttt{snakemake --cores N}).
 Definindo $t_{\text{job}}$ como o tempo de um \textit{job} e $p$ como o número de
 processos concorrentes, o tempo total da aquisição é dado por
 
@@ -114,6 +117,21 @@ concorrentes (aproveitando o \textit{hyperthreading}), aproxima-se de cerca de
 2,6~h --- limite imposto pela duração de um único \textit{job}. O comportamento
 é praticamente linear, como esperado para uma carga sem dependências,
 confirmando a escalabilidade da solução.
+
+É importante destacar que o parâmetro $p$ da Equação~\ref{eq:escalabilidade}
+corresponde exatamente ao número de núcleos solicitados ao Snakemake
+(\texttt{--cores N}): \emph{não é necessário dispor de 90 núcleos} para executar
+os 90 \textit{jobs}. Com $N$ núcleos, a ferramenta executa $N$ \textit{jobs}
+simultaneamente e enfileira os demais, processando-os em $\lceil 90/N \rceil$
+levas sucessivas, sem nunca exceder a capacidade da máquina. Esse controle
+distingue a abordagem de um lançamento ingênuo de todos os processos de uma só
+vez, que saturaria máquinas com poucos núcleos. Na prática, o limite efetivo de
+$N$ é determinado tanto pelo número de núcleos quanto pela memória disponível,
+uma vez que cada \textit{job} ocupa cerca de 2,4~GB de RAM
+(Tabela~\ref{tab:benchmarks}); assim, a mesma definição de fluxo executa de forma
+robusta tanto no servidor HPC ($N = 48$ a $96$) quanto em uma estação local
+modesta ($N = 4$ a $6$), o que sustenta a portabilidade e a reprodutibilidade da
+solução.
 
 \begin{figure}[htbp]
 \centering
