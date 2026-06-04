@@ -104,9 +104,15 @@ if __name__ == "__main__":
     # Rotação inicial para vista de frente (AP)
     patient.rotation = Rotation.from_euler("z", 90, degrees=True).as_matrix()
     # write the image of labels (None by default)
-    # NB: inclui {tag} para evitar condicao de corrida quando varios jobs
-    # angulares rodam em paralelo (cada um grava seu proprio FDK_label).
-    patient.dump_label_image = f"{args.output_dir}/FDK_label-{tag}.mhd"
+    # O rotulo de materiais e identico para todos os angulos (mesmo fantoma),
+    # entao gravamos apenas no primeiro job (inicio == 0). Isso evita a
+    # condicao de corrida entre jobs paralelos (que gravariam o mesmo arquivo)
+    # e nao gera 90 copias redundantes; mantem-se um unico FDK_label.mhd para
+    # inspecao/validacao do mapeamento voxel->material.
+    if inicio == 0:
+        patient.dump_label_image = f"{args.output_dir}/FDK_label.mhd"
+    else:
+        patient.dump_label_image = None
 
     # Rotation
     tr, rot = gate.geometry.utility.volume_orbiting_transform(
