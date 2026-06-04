@@ -113,13 +113,13 @@ ideal = [T1 / p for p in ps]
 fig, ax = plt.subplots(figsize=(9, 5))
 ax.plot(ps, ideal, ls="--", color="gray", label="Escalonamento ideal (T1/p)")
 ax.plot(ps, Tp, color="#34699a", lw=2,
-        label="Escalonamento real (jobs discretos, ceil)")
+        label="Escalonamento real (execucoes inteiras)")
 
 # pontos de operacao medidos/reais
 for p, off, txt in [
         (1,  (22, -2),  "Serial: %.0f h (~%.1f dias)" % (T1, T1/24)),
         (HPC_CORES_PHYS, (-18, 70), "HPC 48 nucleos fisicos\n~%.1f h" % (math.ceil(N_JOBS/HPC_CORES_PHYS)*HPC_JOB_H)),
-        (HPC_CORES_LOG,  (-62, 42), "HPC 90-96 jobs\n~%.1f h" % HPC_JOB_H)]:
+        (HPC_CORES_LOG,  (-62, 42), "HPC 90-96 nucleos\n~%.1f h" % HPC_JOB_H)]:
     y = math.ceil(N_JOBS / p) * HPC_JOB_H
     ax.scatter([p], [y], color="#c0392b", zorder=5, s=45)
     ax.annotate(txt, (p, y), textcoords="offset points",
@@ -127,11 +127,11 @@ for p, off, txt in [
                 arrowprops=dict(arrowstyle="-", color="#c0392b", lw=0.6),
                 bbox=dict(boxstyle="round,pad=0.3", fc="#fdecea", ec="#c0392b", alpha=0.95))
 
-ax.set_xlabel("Numero de processos paralelos (1 thread cada)")
+ax.set_xlabel("Numero de nucleos usados em paralelo")
 ax.set_ylabel("Tempo total da aquisicao 360 graus (horas)")
 ax.set_ylim(0, T1 * 1.05)
-ax.set_title("Escalabilidade da simulacao Monte Carlo (aquisicao CBCT 360 graus)\n"
-             "90 jobs angulares independentes - %.2f h/job medido no HPC" % HPC_JOB_H)
+ax.set_title("Quanto mais nucleos, menos tempo (aquisicao CBCT 360 graus)\n"
+             "90 execucoes angulares independentes - %.2f h cada (medido no HPC)" % HPC_JOB_H)
 ax.grid(True, which="both", ls=":", alpha=0.5)
 ax.legend(loc="upper right")
 fig.tight_layout()
@@ -159,38 +159,27 @@ with open(csv_path, "w", encoding="utf-8") as f:
 def par_h(job_h, p):
     return math.ceil(N_JOBS / p) * job_h
 
-configs = [
-    ("Xeon HPC - 1 thread (serial)",         N_JOBS * HPC_JOB_H,        "#c0392b", "x"),
-    ("i5-1335U laptop - 1 thread (serial)",  N_JOBS * LOC_JOB_H,        "#34699a", "x"),
-    ("i5-1335U laptop - 12 threads",         par_h(LOC_JOB_H, 12),      "#34699a", "*"),
-    ("Xeon HPC - 48 nucleos fisicos",        par_h(HPC_JOB_H, 48),      "#c0392b", "x"),
-    ("Xeon HPC - 90-96 jobs",                par_h(HPC_JOB_H, 96),      "#c0392b", "x"),
-]
-configs.sort(key=lambda x: x[1])
-cnames  = [c[0] for c in configs]
-ctimes  = [c[1] for c in configs]
-ccolors = [c[2] for c in configs]
+# Comparacao SIMPLES: cada maquina usando TODOS os seus nucleos.
+hpc_full = par_h(HPC_JOB_H, 96)        # ~2,6 h
+loc_full = par_h(LOC_JOB_H, 12)        # ~7,9 h
 
-fig, ax = plt.subplots(figsize=(9.8, 4.7))
-bars = ax.barh(cnames, ctimes, color=ccolors, edgecolor="black", linewidth=0.5)
-ax.set_xlabel("Tempo da aquisicao 360 graus - 90 jobs @ 5x10^6 primarias/projecao (horas)")
-ax.set_title("Tempo da aquisicao completa por configuracao de hardware\n"
-             "(job medido: laptop 59 min/job, HPC 2,62 h/job)")
-for b, t, c in zip(bars, ctimes, configs):
-    txt = f"{t:.1f} h" if t >= 1 else f"{t*60:.0f} min"
-    if c[3] == "*":
-        txt += " (pico teorico*)"
-    ax.text(t + max(ctimes)*0.012, b.get_y()+b.get_height()/2, txt, va="center", fontsize=8.4)
-ax.set_xlim(0, max(ctimes) * 1.22)
+names4 = ["Notebook\n(Intel i5, ~10 nucleos)", "Servidor HPC\n(Xeon, 48-96 nucleos)"]
+vals4  = [loc_full, hpc_full]
+cols4  = ["#34699a", "#c0392b"]
+
+fig, ax = plt.subplots(figsize=(8, 3.4))
+bars = ax.barh(names4, vals4, color=cols4, edgecolor="black", linewidth=0.6)
+ax.set_xlabel("Tempo para gerar a tomografia completa - 360 graus (horas)")
+ax.set_title("Quanto tempo leva a simulacao completa em cada maquina")
+for b, t in zip(bars, vals4):
+    ax.text(t + max(vals4)*0.015, b.get_y()+b.get_height()/2,
+            f"{t:.1f} horas", va="center", fontsize=11, fontweight="bold")
+ax.set_xlim(0, max(vals4) * 1.28)
 ax.grid(axis="x", ls=":", alpha=0.5)
-import matplotlib.patches as mpatches
-ax.legend(handles=[mpatches.Patch(color="#c0392b", label="HPC (Xeon Gold 5318Y)"),
-                   mpatches.Patch(color="#34699a", label="Laptop (i5-1335U)")],
-          loc="lower right", fontsize=8.5)
-fig.text(0.01, 0.01,
-         "*pico teorico do laptop = 12 jobs simultaneos sem considerar throttling termico (limite superior otimista).",
-         fontsize=7, style="italic")
-fig.tight_layout(rect=(0, 0.04, 1, 1))
+ax.text(0.97, 0.12, "O servidor e ~%.0fx mais rapido" % (loc_full / hpc_full),
+        transform=ax.transAxes, ha="right", fontsize=9.5, style="italic",
+        bbox=dict(boxstyle="round,pad=0.4", fc="#fdf6e3", ec="gray"))
+fig.tight_layout()
 fig.savefig(os.path.join(OUT, "fig4_comparacao_maquinas.png"), dpi=300)
 plt.close(fig)
 

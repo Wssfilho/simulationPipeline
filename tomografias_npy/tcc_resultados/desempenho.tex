@@ -1,6 +1,3 @@
-
-% ============================================================================
-
 \section{Avaliação de desempenho e escalabilidade}
 \label{sec:desempenho}
 
@@ -91,42 +88,42 @@ paralelismo}.
 
 A aquisição CBCT de $360^\circ$ possui paralelismo trivial: ela é decomposta em
 \textbf{90 execuções independentes} (argumento \texttt{inicio} de 0 a 356, em
-passos de 4), sem comunicação entre os processos. Cada execução --- doravante
-denominada \textit{job} --- processa quatro projeções ($n=4$). A varredura
-angular foi integrada ao Snakemake por meio de um \textit{wildcard} de ângulo,
-de modo que a própria ferramenta gera os 90 \textit{jobs} e os agenda conforme o
-número de núcleos informado na linha de comando (\texttt{snakemake --cores N}).
-Definindo $t_{\text{job}}$ como o tempo de um \textit{job} e $p$ como o número de
-processos concorrentes, o tempo total da aquisição é dado por
+passos de 4), sem comunicação entre os processos. Cada execução processa quatro
+projeções ($n=4$). A varredura angular foi integrada ao Snakemake por meio de um
+\textit{wildcard} de ângulo, de modo que a própria ferramenta gera as 90
+execuções e as agenda conforme o número de núcleos informado na linha de comando
+(\texttt{snakemake --cores N}). Definindo $t_{\text{exec}}$ como o tempo de uma
+execução e $p$ como o número de execuções simultâneas, o tempo total da aquisição
+é dado por
 
 \begin{equation}
-T(p) \;=\; \left\lceil \frac{N_{\text{jobs}}}{p} \right\rceil \cdot t_{\text{job}},
-\qquad N_{\text{jobs}} = 90,
+T(p) \;=\; \left\lceil \frac{N_{\text{exec}}}{p} \right\rceil \cdot t_{\text{exec}},
+\qquad N_{\text{exec}} = 90,
 \label{eq:escalabilidade}
 \end{equation}
 
 \noindent
-em que o operador teto ($\lceil\cdot\rceil$) contabiliza o número de ``levas''
-de execução, dado que um \textit{job} é indivisível. Com
-$t_{\text{job}} = 2{,}62$~h medido no HPC, a Figura~\ref{fig:escalabilidade}
-mostra que a aquisição completa, se executada de forma estritamente serial,
-exigiria cerca de 236~h ($\approx 9{,}8$ dias); distribuída pelos 48 núcleos
-físicos do servidor, o tempo cai para cerca de 5,2~h; e com 90 a 96 processos
-concorrentes (aproveitando o \textit{hyperthreading}), aproxima-se de cerca de
-2,6~h --- limite imposto pela duração de um único \textit{job}. O comportamento
+em que o operador teto ($\lceil\cdot\rceil$) conta o número de ``levas'', já que
+uma execução é indivisível. Com $t_{\text{exec}} = 2{,}62$~h medido no HPC, a
+Figura~\ref{fig:escalabilidade} mostra que a aquisição completa, se executada de
+forma estritamente serial (uma execução por vez), exigiria cerca de 236~h
+($\approx 9{,}8$ dias); distribuída pelos 48 núcleos físicos do servidor, o tempo
+cai para cerca de 5,2~h; e com 90 a 96 execuções simultâneas (aproveitando o
+\textit{hyperthreading}), aproxima-se de cerca de 2,6~h --- limite imposto pela
+duração de uma única execução. O comportamento
 é praticamente linear, como esperado para uma carga sem dependências,
 confirmando a escalabilidade da solução.
 
 É importante destacar que o parâmetro $p$ da Equação~\ref{eq:escalabilidade}
 corresponde exatamente ao número de núcleos solicitados ao Snakemake
-(\texttt{--cores N}): \emph{não é necessário dispor de 90 núcleos} para executar
-os 90 \textit{jobs}. Com $N$ núcleos, a ferramenta executa $N$ \textit{jobs}
-simultaneamente e enfileira os demais, processando-os em $\lceil 90/N \rceil$
+(\texttt{--cores N}): \emph{não é necessário dispor de 90 núcleos} para realizar
+as 90 execuções. Com $N$ núcleos, a ferramenta roda $N$ execuções
+simultaneamente e enfileira as demais, processando-as em $\lceil 90/N \rceil$
 levas sucessivas, sem nunca exceder a capacidade da máquina. Esse controle
 distingue a abordagem de um lançamento ingênuo de todos os processos de uma só
 vez, que saturaria máquinas com poucos núcleos. Na prática, o limite efetivo de
 $N$ é determinado tanto pelo número de núcleos quanto pela memória disponível,
-uma vez que cada \textit{job} ocupa cerca de 2,4~GB de RAM
+uma vez que cada execução ocupa cerca de 2,4~GB de RAM
 (Tabela~\ref{tab:benchmarks}); assim, a mesma definição de fluxo executa de forma
 robusta tanto no servidor HPC ($N = 48$ a $96$) quanto em uma estação local
 modesta ($N = 4$ a $6$), o que sustenta a portabilidade e a reprodutibilidade da
@@ -137,7 +134,7 @@ solução.
 \includegraphics[width=0.95\textwidth]{fig3_escalabilidade.png}
 \caption{Escalabilidade da simulação Monte Carlo para a aquisição de $360^\circ$.
 Tempo total $T(p)$ (Equação~\ref{eq:escalabilidade}) em função do número de
-processos concorrentes, com $t_{\text{job}} = 2{,}62$~h medido no HPC. A curva
+processos concorrentes, com $t_{\text{exec}} = 2{,}62$~h medido no HPC. A curva
 tracejada indica o escalonamento ideal ($T_1/p$).}
 \label{fig:escalabilidade}
 \end{figure}
@@ -145,33 +142,43 @@ tracejada indica o escalonamento ideal ($T_1/p$).}
 \subsection{Comparação entre plataformas}
 \label{sec:comparacao}
 
-A Figura~\ref{fig:comparacao} sintetiza o impacto prático da escolha de hardware
-para a aquisição completa na qualidade definitiva ($5\times10^{6}$ primárias por
-projeção). Os tempos de \textit{job} foram \emph{medidos} em ambas as máquinas:
-59~min por \textit{job} no \textit{notebook} e 157~min ($2{,}62$~h) no servidor;
-os tempos de aquisição completa decorrem da aplicação da
-Equação~\ref{eq:escalabilidade} a esses valores medidos.
+A Figura~\ref{fig:comparacao} resume, de forma direta, o impacto prático da
+escolha de hardware: o tempo necessário para gerar a aquisição completa de
+$360^\circ$ em cada máquina, com cada uma utilizando todos os seus núcleos. No
+servidor HPC, a aquisição conclui em cerca de \textbf{2,6~h}; na estação local
+(\textit{notebook} com processador i5), em cerca de \textbf{7,9~h} --- ou seja, o
+servidor é aproximadamente \textbf{três vezes mais rápido}.
 
-Confirma-se um resultado contraintuitivo: por \textit{job}, o \textit{notebook}
-é \textbf{2,7 vezes mais rápido} que o servidor. Executada serialmente, a
-aquisição completa levaria 88,5~h ($\approx 3{,}7$ dias) no \textit{notebook},
-contra 236~h ($\approx 9{,}8$ dias) no servidor. Entretanto, os 10 núcleos do
-\textit{notebook}, em um \textit{chip} de baixo consumo, não sustentam carga
-total prolongada: mesmo no melhor caso teórico (12 \textit{jobs} simultâneos,
-cerca de 7,9~h, desconsiderando o \textit{throttling} térmico) ele não alcança o
-servidor. O HPC, ao distribuir os 90 \textit{jobs} por seus 48--96 núcleos com
-\textit{clock} sustentado, conclui a aquisição em \textbf{cerca de 2,6~h},
-viabilizando ainda \textbf{cinco vezes mais estatística} por projeção
-($5\times10^{6}$ contra $1\times10^{6}$ primárias) dentro de um tempo prático.
+Esses tempos seguem diretamente da Equação~\ref{eq:escalabilidade}, aplicada à
+duração de \emph{uma} execução medida em cada máquina. Na estação local, cada
+execução foi medida em 59~min; como o processador dispõe de 12 \textit{threads}
+(até 12 execuções simultâneas), as 90 execuções são concluídas em
+$\left\lceil 90/12 \right\rceil = 8$ levas, totalizando
+\begin{equation}
+T_{\text{local}} = 8 \times 59~\text{min} = 472~\text{min} \approx 7{,}9~\text{h}.
+\label{eq:tempo-local}
+\end{equation}
+No servidor, embora cada execução leve mais tempo (2,62~h), seus 90 a 96 núcleos
+processam todas em uma única leva ($\left\lceil 90/96 \right\rceil = 1$),
+resultando em $1 \times 2{,}62~\text{h} \approx 2{,}6$~h.
+
+A diferença não decorre da velocidade por núcleo --- na qual o \textit{notebook}
+é, inclusive, ligeiramente superior --- mas do número de núcleos disponíveis para
+processar as execuções em paralelo: o servidor distribui as 90 execuções por seus
+48 a 96 núcleos, enquanto o \textit{notebook} dispõe de cerca de 10. Além de mais
+rápido, o servidor viabiliza maior qualidade estatística (mais partículas
+simuladas por projeção) dentro de um tempo prático. O valor do \textit{notebook}
+é uma estimativa otimista, pois processadores de baixo consumo reduzem a
+frequência sob carga total prolongada.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.97\textwidth]{fig4_comparacao_maquinas.png}
-\caption{Tempo da aquisição completa de $360^\circ$ (90 \textit{jobs} a
-$5\times10^{6}$ primárias/projeção) por configuração de hardware. Tempos de
-\textit{job} medidos (laptop 59~min; HPC $2{,}62$~h); o tempo total decorre da
-Equação~\ref{eq:escalabilidade}. A barra marcada com asterisco é um limite
-superior otimista (não considera \textit{throttling} térmico do \textit{notebook}).}
+\caption{Tempo necessário para gerar a aquisição completa de $360^\circ$ em cada
+máquina, utilizando todos os núcleos disponíveis. O servidor HPC conclui em cerca
+de 2,6~h, contra cerca de 7,9~h na estação local --- aproximadamente três vezes
+mais rápido. O valor da estação local é uma estimativa (não considera a redução
+de frequência do \textit{notebook} sob carga total).}
 \label{fig:comparacao}
 \end{figure}
 
