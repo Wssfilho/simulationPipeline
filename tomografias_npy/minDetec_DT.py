@@ -104,7 +104,9 @@ if __name__ == "__main__":
     # Rotação inicial para vista de frente (AP)
     patient.rotation = Rotation.from_euler("z", 90, degrees=True).as_matrix()
     # write the image of labels (None by default)
-    patient.dump_label_image = f"{args.output_dir}/FDK_label.mhd"
+    # NB: inclui {tag} para evitar condicao de corrida quando varios jobs
+    # angulares rodam em paralelo (cada um grava seu proprio FDK_label).
+    patient.dump_label_image = f"{args.output_dir}/FDK_label-{tag}.mhd"
 
     # Rotation
     tr, rot = gate.geometry.utility.volume_orbiting_transform(
@@ -222,7 +224,7 @@ if __name__ == "__main__":
     source.position.type = "box"
     source.position.size = [1 * nm, 2 * 15 * mm, 2 * 15 * mm]
     source.direction.type = "focused"
-    source.activity = 5E6 * Bq
+    source.activity = 1E2 * Bq
     # FIXME warning in world coord ! Should be in mother coord system
     source.direction.focus_point = [gantry.translation[0] - 60 * mm, 0, 0]
 
