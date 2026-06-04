@@ -42,7 +42,7 @@ Consolidação (soma de doses) & 0,44 & 0,00 & 3,1 & 0,2 \\
 \end{tabular}
 \end{table}
 
-A Figura~\ref{fig:perfil} apresenta essa distribuição em escala logarítmica.
+A Figura~\ref{fig:perfil} apresenta essa distribuição.
 Observa-se que a simulação Monte Carlo concentra \textbf{81,4\%} do tempo total
 de execução, enquanto as cinco etapas restantes somadas respondem por apenas
 48,3~s (18,6\%). Essa concentração caracteriza a simulação como o único gargalo
@@ -53,9 +53,8 @@ diferentes plataformas é desprezível para o tempo total.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{fig1_perfil_etapas.png}
-\caption{Perfil de tempo de execução (\textit{wall-clock}) por etapa do pipeline,
-em escala logarítmica. A simulação Monte Carlo (em destaque) responde por
-81,4\% do tempo total.}
+\caption{Perfil de tempo de execução (\textit{wall-clock}) por etapa do pipeline.
+A simulação Monte Carlo (em destaque) responde por 81,4\% do tempo total.}
 \label{fig:perfil}
 \end{figure}
 

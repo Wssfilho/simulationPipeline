@@ -68,14 +68,13 @@ colors = ["#c0392b" if k == "gate" else "#34699a" for k in order]
 
 fig, ax = plt.subplots(figsize=(9, 4.3))
 bars = ax.barh(names, walls, color=colors, edgecolor="black", linewidth=0.5)
-ax.set_xscale("log")
-ax.set_xlabel("Tempo de execucao - wall-clock (s, escala logaritmica)")
+ax.set_xlabel("Tempo de execucao - wall-clock (segundos)")
 ax.set_title("Perfil de desempenho por etapa do pipeline (maquina local)")
 for b, w, k in zip(bars, walls, order):
     pct = 100 * w / total_wall
-    ax.text(w * 1.05, b.get_y() + b.get_height()/2,
-            f"{w:.2f}s ({pct:.1f}%)", va="center", fontsize=8.5)
-ax.set_xlim(0.3, walls[-1] * 3)
+    ax.text(w + walls[-1]*0.012, b.get_y() + b.get_height()/2,
+            f"{w:.2f} s ({pct:.1f}%)", va="center", fontsize=8.5)
+ax.set_xlim(0, walls[-1] * 1.4)
 ax.grid(axis="x", ls=":", alpha=0.5)
 fig.tight_layout()
 fig.savefig(os.path.join(OUT, "fig1_perfil_etapas.png"), dpi=300)
@@ -118,9 +117,9 @@ ax.plot(ps, Tp, color="#34699a", lw=2,
 
 # pontos de operacao medidos/reais
 for p, off, txt in [
-        (1,  (18, -18), "Serial: %.0f h (~%.1f dias)" % (T1, T1/24)),
-        (HPC_CORES_PHYS, (-30, 28), "HPC 48 nucleos fisicos\n~%.1f h" % (math.ceil(N_JOBS/HPC_CORES_PHYS)*HPC_JOB_H)),
-        (HPC_CORES_LOG,  (-58, 38), "HPC 90-96 jobs\n~%.1f h" % HPC_JOB_H)]:
+        (1,  (22, -2),  "Serial: %.0f h (~%.1f dias)" % (T1, T1/24)),
+        (HPC_CORES_PHYS, (-18, 70), "HPC 48 nucleos fisicos\n~%.1f h" % (math.ceil(N_JOBS/HPC_CORES_PHYS)*HPC_JOB_H)),
+        (HPC_CORES_LOG,  (-62, 42), "HPC 90-96 jobs\n~%.1f h" % HPC_JOB_H)]:
     y = math.ceil(N_JOBS / p) * HPC_JOB_H
     ax.scatter([p], [y], color="#c0392b", zorder=5, s=45)
     ax.annotate(txt, (p, y), textcoords="offset points",
@@ -128,9 +127,9 @@ for p, off, txt in [
                 arrowprops=dict(arrowstyle="-", color="#c0392b", lw=0.6),
                 bbox=dict(boxstyle="round,pad=0.3", fc="#fdecea", ec="#c0392b", alpha=0.95))
 
-ax.set_yscale("log")
 ax.set_xlabel("Numero de processos paralelos (1 thread cada)")
-ax.set_ylabel("Tempo total da aquisicao 360 graus (h, escala log)")
+ax.set_ylabel("Tempo total da aquisicao 360 graus (horas)")
+ax.set_ylim(0, T1 * 1.05)
 ax.set_title("Escalabilidade da simulacao Monte Carlo (aquisicao CBCT 360 graus)\n"
              "90 jobs angulares independentes - %.2f h/job medido no HPC" % HPC_JOB_H)
 ax.grid(True, which="both", ls=":", alpha=0.5)
@@ -174,16 +173,15 @@ ccolors = [c[2] for c in configs]
 
 fig, ax = plt.subplots(figsize=(9.8, 4.7))
 bars = ax.barh(cnames, ctimes, color=ccolors, edgecolor="black", linewidth=0.5)
-ax.set_xscale("log")
-ax.set_xlabel("Tempo da aquisicao 360 graus - 90 jobs @ 5x10^6 primarias/projecao (h, escala log)")
+ax.set_xlabel("Tempo da aquisicao 360 graus - 90 jobs @ 5x10^6 primarias/projecao (horas)")
 ax.set_title("Tempo da aquisicao completa por configuracao de hardware\n"
              "(job medido: laptop 59 min/job, HPC 2,62 h/job)")
 for b, t, c in zip(bars, ctimes, configs):
     txt = f"{t:.1f} h" if t >= 1 else f"{t*60:.0f} min"
     if c[3] == "*":
         txt += " (pico teorico*)"
-    ax.text(t*1.06, b.get_y()+b.get_height()/2, txt, va="center", fontsize=8.4)
-ax.set_xlim(min(ctimes)*0.55, max(ctimes)*4)
+    ax.text(t + max(ctimes)*0.012, b.get_y()+b.get_height()/2, txt, va="center", fontsize=8.4)
+ax.set_xlim(0, max(ctimes) * 1.22)
 ax.grid(axis="x", ls=":", alpha=0.5)
 import matplotlib.patches as mpatches
 ax.legend(handles=[mpatches.Patch(color="#c0392b", label="HPC (Xeon Gold 5318Y)"),
