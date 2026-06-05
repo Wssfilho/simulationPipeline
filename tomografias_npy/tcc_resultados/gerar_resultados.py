@@ -159,26 +159,26 @@ with open(csv_path, "w", encoding="utf-8") as f:
 def par_h(job_h, p):
     return math.ceil(N_JOBS / p) * job_h
 
-# Comparacao SIMPLES: cada maquina usando TODOS os seus nucleos.
-hpc_full = par_h(HPC_JOB_H, 96)        # ~2,6 h
-loc_full = par_h(LOC_JOB_H, 12)        # ~7,9 h
+# Comparacao: cada maquina e quantas execucoes consegue rodar ao mesmo tempo.
+hpc_full = par_h(HPC_JOB_H, 96)        # 2,6 h  -> 1 leva  (90 nucleos livres)
+loc_opt  = par_h(LOC_JOB_H, 12)        # 7,9 h  -> 8 levas (12 execucoes juntas)
+loc_real = par_h(LOC_JOB_H, 2)         # 44 h   -> 45 levas (2 juntas, limite de RAM)
 
-names4 = ["Notebook\n(Intel i5, ~10 nucleos)", "Servidor HPC\n(Xeon, 48-96 nucleos)"]
-vals4  = [loc_full, hpc_full]
-cols4  = ["#34699a", "#c0392b"]
+names4 = ["Notebook - REAL\n(2 por vez, limite de RAM)",
+          "Notebook - melhor caso\n(12 por vez)",
+          "Servidor HPC\n(48-96 nucleos)"]
+vals4  = [loc_real, loc_opt, hpc_full]
+cols4  = ["#34699a", "#7ba6d6", "#c0392b"]
 
-fig, ax = plt.subplots(figsize=(8, 3.4))
+fig, ax = plt.subplots(figsize=(8.6, 4.0))
 bars = ax.barh(names4, vals4, color=cols4, edgecolor="black", linewidth=0.6)
 ax.set_xlabel("Tempo para gerar a tomografia completa - 360 graus (horas)")
 ax.set_title("Quanto tempo leva a simulacao completa em cada maquina")
 for b, t in zip(bars, vals4):
-    ax.text(t + max(vals4)*0.015, b.get_y()+b.get_height()/2,
-            f"{t:.1f} horas", va="center", fontsize=11, fontweight="bold")
-ax.set_xlim(0, max(vals4) * 1.28)
+    ax.text(t + max(vals4)*0.012, b.get_y()+b.get_height()/2,
+            f"{t:.1f} horas", va="center", fontsize=10.5, fontweight="bold")
+ax.set_xlim(0, max(vals4) * 1.22)
 ax.grid(axis="x", ls=":", alpha=0.5)
-ax.text(0.97, 0.12, "O servidor e ~%.0fx mais rapido" % (loc_full / hpc_full),
-        transform=ax.transAxes, ha="right", fontsize=9.5, style="italic",
-        bbox=dict(boxstyle="round,pad=0.4", fc="#fdf6e3", ec="gray"))
 fig.tight_layout()
 fig.savefig(os.path.join(OUT, "fig4_comparacao_maquinas.png"), dpi=300)
 plt.close(fig)

@@ -146,8 +146,9 @@ A Figura~\ref{fig:comparacao} resume, de forma direta, o impacto prático da
 escolha de hardware: o tempo necessário para gerar a aquisição completa de
 $360^\circ$ em cada máquina, com cada uma utilizando todos os seus núcleos. No
 servidor HPC, a aquisição conclui em cerca de \textbf{2,6~h}; na estação local
-(\textit{notebook} com processador i5), em cerca de \textbf{7,9~h} --- ou seja, o
-servidor é aproximadamente \textbf{três vezes mais rápido}.
+(\textit{notebook} com processador i5), em \textbf{7,9~h} no melhor caso ou cerca
+de \textbf{44~h} na prática --- ou seja, o servidor é de \textbf{três a dezessete
+vezes mais rápido}, conforme detalhado a seguir.
 
 Esses tempos seguem diretamente da Equação~\ref{eq:escalabilidade}, aplicada à
 duração de \emph{uma} execução medida em cada máquina. Na estação local, cada
@@ -158,27 +159,61 @@ $\left\lceil 90/12 \right\rceil = 8$ levas, totalizando
 T_{\text{local}} = 8 \times 59~\text{min} = 472~\text{min} \approx 7{,}9~\text{h}.
 \label{eq:tempo-local}
 \end{equation}
-No servidor, embora cada execução leve mais tempo (2,62~h), seus 90 a 96 núcleos
-processam todas em uma única leva ($\left\lceil 90/96 \right\rceil = 1$),
-resultando em $1 \times 2{,}62~\text{h} \approx 2{,}6$~h.
+Esse valor, contudo, é um limite otimista: ele pressupõe 12 execuções
+simultâneas, mas cada execução ocupa cerca de 2,8~GB de RAM e a estação dispõe de
+apenas 7,6~GB, comportando na prática cerca de 2 execuções por vez. Sob essa
+restrição de memória, as 90 execuções exigem $\left\lceil 90/2 \right\rceil = 45$
+levas, ou seja, $45 \times 59~\text{min} = 2655~\text{min} \approx 44~\text{h}$ ---
+o tempo \emph{real} da estação local. No servidor, embora cada execução leve mais
+tempo (2,62~h), seus 90 a 96 núcleos processam todas em uma única leva
+($\left\lceil 90/96 \right\rceil = 1$), resultando em
+$1 \times 2{,}62~\text{h} \approx 2{,}6$~h.
 
-A diferença não decorre da velocidade por núcleo --- na qual o \textit{notebook}
-é, inclusive, ligeiramente superior --- mas do número de núcleos disponíveis para
-processar as execuções em paralelo: o servidor distribui as 90 execuções por seus
-48 a 96 núcleos, enquanto o \textit{notebook} dispõe de cerca de 10. Além de mais
-rápido, o servidor viabiliza maior qualidade estatística (mais partículas
-simuladas por projeção) dentro de um tempo prático. O valor do \textit{notebook}
-é uma estimativa otimista, pois processadores de baixo consumo reduzem a
-frequência sob carga total prolongada.
+A Tabela~\ref{tab:levas} consolida os três cenários. A mesma fórmula
+$T = \lceil 90/\text{núcleos} \rceil \times t_{\text{exec}}$ se aplica a todos;
+mudam apenas a duração de uma execução e quantas executam ao mesmo tempo (uma
+``leva'' é uma rodada de execuções concorrentes, e o número de levas determina o
+tempo total).
+
+\begin{table}[htbp]
+\centering
+\caption{Decomposição do tempo total da aquisição completa de $360^\circ$ pela
+relação $T = \lceil 90/\text{núcleos} \rceil \times t_{\text{exec}}$, em cada
+configuração de hardware.}
+\label{tab:levas}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Configuração} & \textbf{$t_{\text{exec}}$} & \textbf{Simultâneas} & \textbf{Levas} & \textbf{Total} \\
+\midrule
+Servidor HPC (96 núcleos)      & 2,62~h & 90 & $\lceil 90/96 \rceil = 1$  & \textbf{2,6~h} \\
+Notebook --- melhor caso (12)  & 59~min & 12 & $\lceil 90/12 \rceil = 8$  & 7,9~h \\
+Notebook --- real, RAM (2)     & 59~min & 2  & $\lceil 90/2 \rceil = 45$  & 44~h \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Um ponto merece destaque: cada execução é, individualmente, \emph{mais lenta} no
+servidor (2,62~h) do que no \textit{notebook} (59~min), pois o núcleo do Xeon
+opera em frequência menor. Ainda assim o servidor conclui a aquisição muito antes,
+porque processa as 90 execuções em uma única leva, enquanto o \textit{notebook}
+as processa em 45 levas. Confirma-se, assim, que o ganho do ambiente HPC decorre
+do \emph{número de núcleos}, e não da velocidade de cada um.
+
+Cabe destacar, por fim, que ambas as máquinas executam a mesma qualidade
+estatística ($5\times10^{6}$ primárias por projeção): a diferença de tempo decorre
+exclusivamente do hardware, e não de uma máquina simular menos partículas que a
+outra. A Figura~\ref{fig:comparacao} resume os três valores --- servidor em
+2,6~h; estação local em 7,9~h (melhor caso) ou cerca de 44~h (cenário real,
+limitado pela memória).
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.97\textwidth]{fig4_comparacao_maquinas.png}
-\caption{Tempo necessário para gerar a aquisição completa de $360^\circ$ em cada
-máquina, utilizando todos os núcleos disponíveis. O servidor HPC conclui em cerca
-de 2,6~h, contra cerca de 7,9~h na estação local --- aproximadamente três vezes
-mais rápido. O valor da estação local é uma estimativa (não considera a redução
-de frequência do \textit{notebook} sob carga total).}
+\caption{Tempo para gerar a aquisição completa de $360^\circ$ (mesma qualidade,
+$5\times10^{6}$ primárias por projeção). O servidor HPC conclui em cerca de
+2,6~h. A estação local aparece em dois cenários: o melhor caso teórico (7,9~h,
+com 12 execuções simultâneas) e o cenário real (cerca de 44~h), em que a memória
+disponível permite apenas duas execuções por vez.}
 \label{fig:comparacao}
 \end{figure}
 
