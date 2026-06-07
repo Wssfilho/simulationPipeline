@@ -70,3 +70,24 @@ snakemake --cores 6 -p
 - Se existir `imagens_ct/<sample>.nii.gz`, o Snakemake usa esse arquivo diretamente.
 - Se nao existir, mas houver `<sample>.npy`, o arquivo sera convertido antes da segmentacao.
 - A etapa de segmentacao usa `segmentation.py` com contrato 1:1 (uma entrada para uma saida).
+
+## DAG resumido
+
+Para ficar mais legivel em apresentacao ou relatorio, a melhor opcao e mostrar o fluxo da esquerda para a direita e numerar as etapas principais. No caso deste pipeline, o DAG resumido fica assim:
+
+```mermaid
+flowchart LR
+  A[1. Entrada: .npy ou .nii.gz] --> B[2. Conversao .npy -> .nii.gz]
+  A --> C[3. Segmentacao]
+  B --> C
+  C --> D[4. Simulacao CBCT por angulo\n(jobs paralelos)]
+  D --> E[5. Soma dos resultados]
+  E --> F[6. Estatisticas de dose e DVH]
+```
+
+Se quiser gerar a figura do Snakemake em arquivo, use:
+
+```bash
+snakemake --dag -s Snakefile | dot -Grankdir=LR -Tpng > dag_lr.png
+snakemake --dag -s Snakefile | dot -Grankdir=LR -Tsvg > dag_lr.svg
+```
