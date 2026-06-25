@@ -34,7 +34,7 @@ def run_totalsegmentator(input_path: Path, output_path: Path, device: str) -> No
         output=str(output_path),
         task="total",
         ml=True,
-        # precisa-se testar em um computador com GPU, o modo fast false nao executou as imagens corretamente
+        # change to False for GPU
         fast=True,
         nr_thr_resamp=1,
         nr_thr_saving=1,
