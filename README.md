@@ -1,20 +1,10 @@
 # TCC - Trabalho de Conclusão de Curso
 
-Este repositório contém o código-fonte desenvolvido para o Trabalho de Conclusão de Curso (TCC) de [Seu Curso e Universidade]. O projeto foi desenvolvido em Python com o objetivo de [descreva brevemente o objetivo principal do projeto].
+Este repositório contém o código-fonte desenvolvido para o Trabalho de Conclusão de Curso (TCC) da Universidade Estadual de Santa Cruz. O projeto foi desenvolvido em Python com o objetivo de otimizar predições de dooses.
 
 ## Descrição
-
-(Descreva seu projeto em 2-4 linhas. Indique o problema que resolve ou o que ele realiza.)
-
-Exemplo:  
-Este projeto visa implementar um sistema de [nome do sistema/projeto], que permite [explique as funcionalidades].
+Este projeto visa implementar um sistema de pipeline, que permite integração automática das ferramentas para preparações de simulações computacionais em GATE.
 O sistema foi desenvolvido utilizando Python visando robustez, simplicidade e facilidade de uso/modificação.
-
-## Funcionalidades
-
-- [ ] Funcionalidade 1: descrição.
-- [ ] Funcionalidade 2: descrição.
-- [ ] Funcionalidade 3: descrição.
 
 ## Requisitos
 
@@ -62,8 +52,6 @@ Pull requests são bem-vindos. Para grandes mudanças, por favor abra uma issue 
 
 ## Licença
 
-[Escolha a licença do projeto, ex: MIT](LICENSE)
-
 ## Autor
 
-- [Seu Nome](https://github.com/Wssfilho)
+- Wilson Santos Silva Filho(https://github.com/Wssfilho)
